@@ -56,6 +56,195 @@ function formatTimeOnly(dateStr) {
   return dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
+function resolveMatchesTeams(matches) {
+  const groupTeams = {
+    A: ["Mexico", "South Korea", "South Africa", "Czechia"],
+    B: ["Canada", "Switzerland", "Qatar", "Bosnia-Herzegovina"],
+    C: ["Brazil", "Morocco", "Scotland", "Haiti"],
+    D: ["USA", "Paraguay", "Australia", "Turkiye"],
+    E: ["Germany", "Ecuador", "Ivory Coast", "Curacao"],
+    F: ["Netherlands", "Japan", "Tunisia", "Sweden"],
+    G: ["Belgium", "Iran", "Egypt", "New Zealand"],
+    H: ["Spain", "Uruguay", "Saudi Arabia", "Cape Verde"],
+    I: ["France", "Senegal", "Norway", "Iraq"],
+    J: ["Argentina", "Austria", "Algeria", "Jordan"],
+    K: ["Portugal", "Colombia", "Uzbekistan", "DR Congo"],
+    L: ["England", "Croatia", "Panama", "Ghana"]
+  };
+
+  const standings = {};
+  for (const group in groupTeams) {
+    standings[group] = groupTeams[group].map(name => ({
+      name, points: 0, gd: 0, gs: 0
+    }));
+  }
+
+  function getTeamRef(group, name) {
+    return standings[group] ? standings[group].find(t => t.name === name) : null;
+  }
+
+  matches.forEach(m => {
+    if (m.stage === 'group') {
+      const homeRef = getTeamRef(m.group_name, m.home_team);
+      const awayRef = getTeamRef(m.group_name, m.away_team);
+      if (!homeRef || !awayRef) return;
+
+      const hasPred = m.predicted_home_score !== null && m.predicted_away_score !== null;
+      const isFin = m.status === 'finished';
+      
+      let hs, as;
+      if (isFin) {
+        hs = m.home_score;
+        as = m.away_score;
+      } else if (hasPred) {
+        hs = m.predicted_home_score;
+        as = m.predicted_away_score;
+      }
+
+      if (hs !== undefined && as !== undefined) {
+        homeRef.gs += hs;
+        awayRef.gs += as;
+        homeRef.gd += (hs - as);
+        awayRef.gd += (as - hs);
+        
+        if (hs > as) {
+          homeRef.points += 3;
+        } else if (hs < as) {
+          awayRef.points += 3;
+        } else {
+          homeRef.points += 1;
+          awayRef.points += 1;
+        }
+      }
+    }
+  });
+
+  for (const group in standings) {
+    standings[group].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      if (b.gs !== a.gs) return b.gs - a.gs;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  const getGroupTeam = (group, rank) => {
+    return standings[group] && standings[group][rank] ? standings[group][rank].name : `Grupo ${group} #${rank+1}`;
+  };
+
+  const r32Mapping = {
+    "Ganador R32 - P1": getGroupTeam('A', 0),
+    "Ganador R32 - Q1": getGroupTeam('C', 2),
+    "Ganador R32 - P2": getGroupTeam('B', 0),
+    "Ganador R32 - Q2": getGroupTeam('D', 2),
+    "Ganador R32 - P3": getGroupTeam('C', 0),
+    "Ganador R32 - Q3": getGroupTeam('A', 1),
+    "Ganador R32 - P4": getGroupTeam('D', 0),
+    "Ganador R32 - Q4": getGroupTeam('B', 1),
+    "Ganador R32 - P5": getGroupTeam('E', 0),
+    "Ganador R32 - Q5": getGroupTeam('A', 2),
+    "Ganador R32 - P6": getGroupTeam('F', 0),
+    "Ganador R32 - Q6": getGroupTeam('B', 2),
+    "Ganador R32 - P7": getGroupTeam('G', 0),
+    "Ganador R32 - Q7": getGroupTeam('C', 1),
+    "Ganador R32 - P8": getGroupTeam('H', 0),
+    "Ganador R32 - Q8": getGroupTeam('D', 1),
+    "Ganador R32 - P9": getGroupTeam('I', 0),
+    "Ganador R32 - Q9": getGroupTeam('E', 2),
+    "Ganador R32 - P10": getGroupTeam('J', 0),
+    "Ganador R32 - Q10": getGroupTeam('F', 2),
+    "Ganador R32 - P11": getGroupTeam('K', 0),
+    "Ganador R32 - Q11": getGroupTeam('E', 1),
+    "Ganador R32 - P12": getGroupTeam('L', 0),
+    "Ganador R32 - Q12": getGroupTeam('F', 1),
+    "Ganador R32 - P13": getGroupTeam('G', 1),
+    "Ganador R32 - Q13": getGroupTeam('I', 1),
+    "Ganador R32 - P14": getGroupTeam('H', 1),
+    "Ganador R32 - Q14": getGroupTeam('J', 1),
+    "Ganador R32 - P15": getGroupTeam('K', 1),
+    "Ganador R32 - Q15": getGroupTeam('G', 2),
+    "Ganador R32 - P16": getGroupTeam('L', 1),
+    "Ganador R32 - Q16": getGroupTeam('H', 2)
+  };
+
+  function getMatchResult(matchNum) {
+    const m = matches.find(x => x.match_num == matchNum);
+    if (!m) return { winner: `Ganador M${matchNum}`, loser: `Perdedor M${matchNum}` };
+
+    const resolvedHome = getResolvedTeam(m.home_team);
+    const resolvedAway = getResolvedTeam(m.away_team);
+
+    const hasPred = m.predicted_home_score !== null && m.predicted_away_score !== null;
+    const isFin = m.status === 'finished';
+    
+    let hs, as;
+    if (isFin) {
+      hs = m.home_score;
+      as = m.away_score;
+    } else if (hasPred) {
+      hs = m.predicted_home_score;
+      as = m.predicted_away_score;
+    }
+
+    if (hs !== undefined && as !== undefined) {
+      if (hs >= as) {
+        return { winner: resolvedHome, loser: resolvedAway };
+      } else {
+        return { winner: resolvedAway, loser: resolvedHome };
+      }
+    }
+    return { winner: `Ganador M${matchNum}`, loser: `Perdedor M${matchNum}` };
+  }
+
+  function getResolvedTeam(teamName) {
+    if (!teamName) return 'TBD';
+    if (!teamName.startsWith('Ganador R') && !teamName.startsWith('Ganador Q') && !teamName.startsWith('Ganador S') && !teamName.startsWith('Perdedor') && !teamName.startsWith('Ganador M')) {
+      return teamName;
+    }
+
+    if (r32Mapping[teamName]) {
+      return r32Mapping[teamName];
+    }
+
+    if (teamName.startsWith('Ganador R16 - ')) {
+      const parts = teamName.replace('Ganador R16 - P', '').replace('Ganador R16 - Q', '');
+      const matchIndex = parseInt(parts) - 1;
+      const isHome = teamName.includes('- P');
+      const baseMatchNum = 73 + matchIndex * 2 + (isHome ? 0 : 1);
+      return getMatchResult(baseMatchNum).winner;
+    }
+
+    if (teamName.startsWith('Ganador QF - ')) {
+      const parts = teamName.replace('Ganador QF - P', '').replace('Ganador QF - Q', '');
+      const matchIndex = parseInt(parts) - 1;
+      const isHome = teamName.includes('- P');
+      const baseMatchNum = 89 + matchIndex * 2 + (isHome ? 0 : 1);
+      return getMatchResult(baseMatchNum).winner;
+    }
+
+    if (teamName.startsWith('Ganador SF - ')) {
+      const parts = teamName.replace('Ganador SF - P', '').replace('Ganador SF - Q', '');
+      const matchIndex = parseInt(parts) - 1;
+      const isHome = teamName.includes('- P');
+      const baseMatchNum = 97 + matchIndex * 2 + (isHome ? 0 : 1);
+      return getMatchResult(baseMatchNum).winner;
+    }
+
+    if (teamName === 'Ganador SF1') return getMatchResult(101).winner;
+    if (teamName === 'Ganador SF2') return getMatchResult(102).winner;
+    if (teamName === 'Perdedor SF1') return getMatchResult(101).loser;
+    if (teamName === 'Perdedor SF2') return getMatchResult(102).loser;
+
+    return teamName;
+  }
+
+  return matches.map(m => ({
+    ...m,
+    home_team: getResolvedTeam(m.home_team),
+    away_team: getResolvedTeam(m.away_team)
+  }));
+}
+
 // 1. Auth Page Component (Login / Register)
 function LoginRegisterComponent(isRegister = false) {
   return `
@@ -163,7 +352,7 @@ function LoginRegisterComponent(isRegister = false) {
 // 2. Dashboard Component
 function DashboardComponent(state) {
   const user = state.user;
-  const matches = state.matches || [];
+  const matches = resolveMatchesTeams(state.matches || []);
   const leaderboard = state.leaderboard || [];
 
   // Calculate statistics
@@ -365,7 +554,7 @@ function DashboardComponent(state) {
 
 // 3. Matches Predictor Component
 function MatchesComponent(state, filterType = 'pending') {
-  const matches = state.matches || [];
+  const matches = resolveMatchesTeams(state.matches || []);
   const now = Date.now();
 
   // Apply filters
@@ -593,7 +782,7 @@ function LeaderboardComponent(state) {
 
 // 5. Admin Panel Component
 function AdminComponent(state) {
-  const matches = state.matches || [];
+  const matches = resolveMatchesTeams(state.matches || []);
   const activeMatches = matches.filter(m => m.stage === 'group' || m.is_knockout === 1);
 
   return `

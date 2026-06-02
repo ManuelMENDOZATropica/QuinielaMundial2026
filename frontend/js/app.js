@@ -432,17 +432,13 @@ async function triggerSave(matchId) {
       localMatch.predicted_away_score = awayScore;
     }
 
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.style.backgroundColor = '#6f7a70'; // Muted color
-      saveBtn.textContent = 'Guardado';
-    }
-
-    // Border highlights
-    const row = document.getElementById(`match-row-${matchId}`);
-    if (row) {
-      row.classList.remove('border-border-light', 'bg-surface-gray');
-      row.classList.add('border-primary/40', 'bg-primary/5');
+    // Re-render current page to update bracket propagation
+    const appContainer = document.getElementById('app');
+    if (window.location.hash === '#matches') {
+      appContainer.innerHTML = MatchesComponent(state, state.currentMatchesFilter);
+      bindMatchesPageEvents();
+    } else if (window.location.hash === '#dashboard') {
+      appContainer.innerHTML = DashboardComponent(state);
     }
   } catch (err) {
     showToast(err.message, 'error');

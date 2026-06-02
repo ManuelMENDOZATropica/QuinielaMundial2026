@@ -225,6 +225,67 @@ db.serialize(async () => {
         matchNum++;
       }
 
+      // Round of 16 placeholders (8 matches)
+      const r16Dates = [
+        "2026-07-07 15:00", "2026-07-07 19:00", "2026-07-08 15:00", "2026-07-08 19:00",
+        "2026-07-09 15:00", "2026-07-09 19:00", "2026-07-10 15:00", "2026-07-10 19:00"
+      ];
+      for (let k = 0; k < 8; k++) {
+        db.run(`
+          INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
+          VALUES (?, 'Round of 16', ?, ?, ?, 1, 'r16')
+        `, [matchNum, `Ganador R16 - P${k+1}`, `Ganador R16 - Q${k+1}`, r16Dates[k]], (err) => {
+          if (err) console.error(`Error seeding knockout match ${matchNum}:`, err);
+        });
+        matchNum++;
+      }
+
+      // Quarterfinals placeholders (4 matches)
+      const qfDates = [
+        "2026-07-12 15:00", "2026-07-12 19:00", "2026-07-13 15:00", "2026-07-13 19:00"
+      ];
+      for (let k = 0; k < 4; k++) {
+        db.run(`
+          INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
+          VALUES (?, 'Quarterfinals', ?, ?, ?, 1, 'qf')
+        `, [matchNum, `Ganador QF - P${k+1}`, `Ganador QF - Q${k+1}`, qfDates[k]], (err) => {
+          if (err) console.error(`Error seeding knockout match ${matchNum}:`, err);
+        });
+        matchNum++;
+      }
+
+      // Semifinals placeholders (2 matches)
+      const sfDates = [
+        "2026-07-15 19:00", "2026-07-16 19:00"
+      ];
+      for (let k = 0; k < 2; k++) {
+        db.run(`
+          INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
+          VALUES (?, 'Semifinals', ?, ?, ?, 1, 'sf')
+        `, [matchNum, `Ganador SF - P${k+1}`, `Ganador SF - Q${k+1}`, sfDates[k]], (err) => {
+          if (err) console.error(`Error seeding knockout match ${matchNum}:`, err);
+        });
+        matchNum++;
+      }
+
+      // Third Place Match
+      db.run(`
+        INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
+        VALUES (?, 'Third Place Match', 'Perdedor SF1', 'Perdedor SF2', '2026-07-18 15:00', 1, '3rd')
+      `, [matchNum], (err) => {
+        if (err) console.error(`Error seeding 3rd place match:`, err);
+      });
+      matchNum++;
+
+      // Final Match
+      db.run(`
+        INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
+        VALUES (?, 'Final', 'Ganador SF1', 'Ganador SF2', '2026-07-19 16:00', 1, 'final')
+      `, [matchNum], (err) => {
+        if (err) console.error(`Error seeding final match:`, err);
+      });
+      matchNum++;
+
       console.log(`Successfully seeded ${matchNum - 1} matches.`);
     } else {
       console.log("Matches already seeded.");
