@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
@@ -35,9 +34,8 @@ const app = express();
 const PORT = process.env.PORT || 3005;
 const JWT_SECRET = process.env.JWT_SECRET || 'tropica-mundial-2026-secret-key-123456';
 
-// Connect to SQLite Database (Support dynamic path for Render persistent disk)
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'db/database.sqlite');
-const db = new sqlite3.Database(dbPath);
+// Connect to Database (Supports both SQLite and PostgreSQL dynamically)
+const db = require('./db/db');
 
 // Middlewares
 const allowedOrigins = [
