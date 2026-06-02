@@ -3,12 +3,15 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-const dbDir = path.join(__dirname, '../db');
+// Connect to Database (Support dynamic path for Render persistent disk)
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'database.sqlite');
+
+// Ensure parent directory exists
+const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const dbPath = path.join(dbDir, 'database.sqlite');
 const db = new sqlite3.Database(dbPath);
 
 const countriesMap = {

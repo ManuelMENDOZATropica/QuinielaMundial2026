@@ -35,8 +35,8 @@ const app = express();
 const PORT = process.env.PORT || 3005;
 const JWT_SECRET = process.env.JWT_SECRET || 'tropica-mundial-2026-secret-key-123456';
 
-// Connect to SQLite Database
-const dbPath = path.join(__dirname, 'db/database.sqlite');
+// Connect to SQLite Database (Support dynamic path for Render persistent disk)
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'db/database.sqlite');
 const db = new sqlite3.Database(dbPath);
 
 // Middlewares
