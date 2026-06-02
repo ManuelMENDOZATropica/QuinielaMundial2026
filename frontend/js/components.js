@@ -41,7 +41,19 @@ function getTeamCode(teamName) {
 
 function formatDate(dateStr) {
   const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  return new Date(dateStr).toLocaleDateString('es-ES', options);
+  return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('es-ES', options);
+}
+
+function formatDateHeader(dateStr) {
+  const dateObj = new Date(dateStr.replace(' ', 'T'));
+  const options = { weekday: 'long', day: 'numeric', month: 'long' };
+  const formatted = dateObj.toLocaleDateString('es-ES', options);
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+function formatTimeOnly(dateStr) {
+  const dateObj = new Date(dateStr.replace(' ', 'T'));
+  return dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
 // 1. Auth Page Component (Login / Register)
@@ -410,83 +422,115 @@ function MatchesComponent(state, filterType = 'pending') {
           <span class="material-symbols-outlined text-4xl mb-sm">sports_soccer</span>
           <p class="font-body-md text-body-md">No se encontraron encuentros con este filtro.</p>
         </div>
-      ` : `
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
-          ${filteredMatches.map(m => {
-            const isLocked = new Date(m.match_date).getTime() <= now;
-            const isFinished = m.status === 'finished';
-            const hasPrediction = m.predicted_home_score !== null;
-            const homeScoreVal = hasPrediction ? m.predicted_home_score : '';
-            const awayScoreVal = hasPrediction ? m.predicted_away_score : '';
-            const stageLabel = m.stage === 'group' ? `Grupo ${m.group_name}` : (m.stage === 'r32' ? 'Dieciseisavos' : m.stage.toUpperCase());
+      ` : (() => {
+        // Group matches by date key (YYYY-MM-DD)
+        const groups = {};
+        filteredMatches.forEach(m => {
+          const dateKey = m.match_date.split(' ')[0];
+          if (!groups[dateKey]) {
+            groups[dateKey] = [];
+          }
+          groups[dateKey].push(m);
+        });
 
-            return `
-              <div class="bg-surface-gray border ${hasPrediction ? 'border-primary/40 bg-primary/5' : 'border-border-light'} rounded-xl p-md flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer group" id="match-row-${m.id}">
-                <!-- Top Meta -->
-                <div class="flex justify-between items-center text-label-md text-on-surface-variant opacity-80 mb-sm">
-                  <span class="font-semibold uppercase tracking-wider">${stageLabel}</span>
-                  <span class="font-medium text-[11px]">${formatDate(m.match_date)}</span>
-                </div>
+        // Get sorted date keys
+        const sortedDates = Object.keys(groups).sort();
 
-                <!-- Middle: Flags & Inputs directly below flags -->
-                <div class="flex items-center justify-between my-sm">
-                  <!-- Team Home -->
-                  <div class="flex flex-col items-center flex-1">
-                    <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
-                      <img alt="${m.home_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
-                    </div>
-                    <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
-                           type="number" min="0" max="99" placeholder="-"
-                           data-match-id="${m.id}" data-team="home" value="${homeScoreVal}" ${isLocked ? 'disabled' : ''}/>
-                    <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
-                  </div>
-
-                  <!-- VS -->
-                  <span class="font-label-md text-label-md text-on-surface-variant font-bold px-sm">VS</span>
-
-                  <!-- Team Away -->
-                  <div class="flex flex-col items-center flex-1">
-                    <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
-                      <img alt="${m.away_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
-                    </div>
-                    <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
-                           type="number" min="0" max="99" placeholder="-"
-                           data-match-id="${m.id}" data-team="away" value="${awayScoreVal}" ${isLocked ? 'disabled' : ''}/>
-                    <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
-                  </div>
-                </div>
-
-                <!-- Bottom Action -->
-                <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
-                  <div class="flex flex-col">
-                    ${isFinished ? `
-                      <span class="font-label-md text-xs text-success-green font-bold">
-                        Oficial: ${m.home_score}-${m.away_score}
-                      </span>
-                      <span class="text-[11px] font-bold text-primary">+${m.points_earned} pts</span>
-                    ` : (isLocked ? `
-                      <span class="text-xs text-on-surface-variant italic">Bloqueado</span>
-                    ` : `
-                      <span class="text-xs text-coral" id="status-text-${m.id}">
-                        <span class="inline-block w-1.5 h-1.5 rounded-full ${hasPrediction ? 'bg-success-green' : 'bg-coral'} mr-1"></span>
-                        ${hasPrediction ? 'Pronosticado' : 'Pendiente'}
-                      </span>
-                    `)}
-                  </div>
-                  <div>
-                    ${!isLocked && !isFinished ? `
-                      <button class="bg-primary text-on-primary px-sm py-0.5 rounded font-label-md text-xs btn-save-prediction hover:opacity-90 transition-opacity" 
-                              data-match-id="${m.id}" id="save-btn-${m.id}" style="${hasPrediction ? 'background-color:#6f7a70' : ''}">
-                        ${hasPrediction ? 'Guardado' : 'Predecir'}
-                      </button>
-                    ` : ''}
-                  </div>
-                </div>
+        return sortedDates.map(dateKey => {
+          const matchesInDate = groups[dateKey];
+          return `
+            <div class="mb-xl">
+              <!-- Date Header -->
+              <div class="flex items-center gap-md mb-md">
+                <h3 class="font-headline-sm text-headline-sm text-primary font-bold">
+                  ${formatDateHeader(matchesInDate[0].match_date)}
+                </h3>
+                <div class="flex-grow border-t border-border-light"></div>
               </div>
-            `;
-          }).join('')}
-        </div>
-      `}
+              
+              <!-- Cards Grid for this date -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
+                ${matchesInDate.map(m => {
+                  const isLocked = new Date(m.match_date).getTime() <= now;
+                  const isFinished = m.status === 'finished';
+                  const hasPrediction = m.predicted_home_score !== null;
+                  const homeScoreVal = hasPrediction ? m.predicted_home_score : '';
+                  const awayScoreVal = hasPrediction ? m.predicted_away_score : '';
+                  const stageLabel = m.stage === 'group' ? `Grupo ${m.group_name}` : (m.stage === 'r32' ? 'Dieciseisavos' : m.stage.toUpperCase());
+
+                  return `
+                    <div class="bg-surface-gray border ${hasPrediction ? 'border-primary/40 bg-primary/5' : 'border-border-light'} rounded-xl p-md flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer group" id="match-row-${m.id}">
+                      <!-- Top Meta -->
+                      <div class="flex justify-between items-center text-label-md text-on-surface-variant opacity-80 mb-sm">
+                        <span class="font-semibold uppercase tracking-wider">${stageLabel}</span>
+                        <span class="font-bold text-primary text-[12px] flex items-center gap-xs">
+                          <span class="material-symbols-outlined text-[14px]">schedule</span>
+                          ${formatTimeOnly(m.match_date)}
+                        </span>
+                      </div>
+
+                      <!-- Middle: Flags & Inputs directly below flags -->
+                      <div class="flex items-center justify-between my-sm">
+                        <!-- Team Home -->
+                        <div class="flex flex-col items-center flex-1">
+                          <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
+                            <img alt="${m.home_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+                          </div>
+                          <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
+                                 type="number" min="0" max="99" placeholder="-"
+                                 data-match-id="${m.id}" data-team="home" value="${homeScoreVal}" ${isLocked ? 'disabled' : ''}/>
+                          <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
+                        </div>
+
+                        <!-- VS -->
+                        <span class="font-label-md text-label-md text-on-surface-variant font-bold px-sm">VS</span>
+
+                        <!-- Team Away -->
+                        <div class="flex flex-col items-center flex-1">
+                          <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
+                            <img alt="${m.away_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+                          </div>
+                          <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
+                                 type="number" min="0" max="99" placeholder="-"
+                                 data-match-id="${m.id}" data-team="away" value="${awayScoreVal}" ${isLocked ? 'disabled' : ''}/>
+                          <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
+                        </div>
+                      </div>
+
+                      <!-- Bottom Action -->
+                      <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
+                        <div class="flex flex-col">
+                          ${isFinished ? `
+                            <span class="font-label-md text-xs text-success-green font-bold">
+                              Oficial: ${m.home_score}-${m.away_score}
+                            </span>
+                            <span class="text-[11px] font-bold text-primary">+${m.points_earned} pts</span>
+                          ` : (isLocked ? `
+                            <span class="text-xs text-on-surface-variant italic">Bloqueado</span>
+                          ` : `
+                            <span class="text-xs text-coral" id="status-text-${m.id}">
+                              <span class="inline-block w-1.5 h-1.5 rounded-full ${hasPrediction ? 'bg-success-green' : 'bg-coral'} mr-1"></span>
+                              ${hasPrediction ? 'Pronosticado' : 'Pendiente'}
+                            </span>
+                          `)}
+                        </div>
+                        <div>
+                          ${!isLocked && !isFinished ? `
+                            <button class="bg-primary text-on-primary px-sm py-0.5 rounded font-label-md text-xs btn-save-prediction hover:opacity-90 transition-opacity" 
+                                    data-match-id="${m.id}" id="save-btn-${m.id}" style="${hasPrediction ? 'background-color:#6f7a70' : ''}">
+                              ${hasPrediction ? 'Guardado' : 'Predecir'}
+                            </button>
+                          ` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      })()}
     </div>
   `;
 }
