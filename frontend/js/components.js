@@ -802,6 +802,7 @@ function LeaderboardComponent(state) {
 function AdminComponent(state) {
   const matches = resolveMatchesTeams(state.matches || []);
   const activeMatches = matches.filter(m => m.stage === 'group' || m.is_knockout === 1);
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   return `
     <div class="bento-grid">
@@ -855,7 +856,8 @@ function AdminComponent(state) {
         </div>
       </div>
 
-      <!-- Developer Simulation Panel -->
+      <!-- Developer Simulation Panel / Production Info -->
+      ${isLocal ? `
       <div class="col-span-12 md:col-span-4 bg-white border border-border-light rounded-xl p-lg card-shadow">
         <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-md">Simulador de Quiniela</h2>
         <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">Puebla la plataforma con predicciones ficticias para realizar pruebas inmediatas de clasificaciones y tablas.</p>
@@ -879,6 +881,18 @@ function AdminComponent(state) {
           </div>
         </div>
       </div>
+      ` : `
+      <div class="col-span-12 md:col-span-4 bg-white border border-border-light rounded-xl p-lg card-shadow">
+        <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-md">Información de Producción</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">Te encuentras en la interfaz de administración en vivo del portal corporativo de Trópica.</p>
+        <div class="bg-primary/5 border border-primary/20 p-md rounded-lg space-y-sm">
+          <h3 class="font-label-lg text-label-lg text-primary font-bold">Cálculo en Tiempo Real</h3>
+          <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Las predicciones de los usuarios reales se procesan en tiempo real. Cuando registres y finalices el marcador oficial de un partido en el panel de la izquierda, se actualizarán los puntajes globales de todos los participantes de forma automática.
+          </p>
+        </div>
+      </div>
+      `}
     </div>
   `;
 }

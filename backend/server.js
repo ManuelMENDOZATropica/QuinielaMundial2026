@@ -342,6 +342,12 @@ app.post('/api/admin/matches/:id/score', requireAdmin, (req, res) => {
 
 // Development / Demo Helper: Seed fake users and predictions
 app.post('/api/admin/system/fill-random', requireAdmin, (req, res) => {
+  // Extra safety check: verify request originates from local interface
+  const isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+  if (!isLocal) {
+    return res.status(403).json({ error: "Este endpoint de simulación sólo está disponible en entorno local." });
+  }
+
   const fakeNames = ["Benjamín Delvingt", "Eugenio Siritto", "Lucas Bellocchio", "Sofía Cruz", "Alejandro Pérez", "Mateo Gómez", "Valentina Ortiz", "Lucía Díaz", "Daniel Silva", "Mariana Torres"];
   const salt = bcrypt.genSaltSync(10);
   const hash = bcrypt.hashSync("123456", salt);
@@ -391,7 +397,7 @@ app.post('/api/dev/fill-my-predictions', authenticateToken, (req, res) => {
   
   // Extra safety check: verify request originates from local interface
   const isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
-  if (!isLocal && process.env.NODE_ENV === 'production') {
+  if (!isLocal) {
     return res.status(403).json({ error: "Este endpoint de depuración sólo está disponible en entorno local." });
   }
 
