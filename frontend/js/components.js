@@ -470,6 +470,7 @@ function DashboardComponent(state) {
                                type="number" min="0" max="99" placeholder="-"
                                data-match-id="${m.id}" data-team="home" value=""/>
                         <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
+                        <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.home_team}">${m.home_team}</span>
                       </div>
 
                       <!-- VS -->
@@ -484,6 +485,7 @@ function DashboardComponent(state) {
                                type="number" min="0" max="99" placeholder="-"
                                data-match-id="${m.id}" data-team="away" value=""/>
                         <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
+                        <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.away_team}">${m.away_team}</span>
                       </div>
                     </div>
 
@@ -592,6 +594,10 @@ function MatchesComponent(state, filterType = 'pending') {
               Autollenar Grupos (Dev)
             </button>
           ` : ''}
+          <button id="btn-start-tutorial" class="bg-primary/10 text-primary font-label-md text-xs px-md py-sm rounded-lg hover:bg-primary/20 active:scale-95 transition-all flex items-center gap-xs ml-sm md:ml-md border border-primary/20" title="Ver tutorial de cómo jugar">
+            <span class="material-symbols-outlined text-[16px]">help</span>
+            Cómo Jugar
+          </button>
         </div>
         
         <!-- Filter Selector tabs -->
@@ -679,6 +685,7 @@ function MatchesComponent(state, filterType = 'pending') {
                                  type="number" min="0" max="99" placeholder="-"
                                  data-match-id="${m.id}" data-team="home" value="${homeScoreVal}" ${isLocked ? 'disabled' : ''}/>
                           <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
+                          <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.home_team}">${m.home_team}</span>
                         </div>
 
                         <!-- VS -->
@@ -693,6 +700,7 @@ function MatchesComponent(state, filterType = 'pending') {
                                  type="number" min="0" max="99" placeholder="-"
                                  data-match-id="${m.id}" data-team="away" value="${awayScoreVal}" ${isLocked ? 'disabled' : ''}/>
                           <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
+                          <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.away_team}">${m.away_team}</span>
                         </div>
                       </div>
 
