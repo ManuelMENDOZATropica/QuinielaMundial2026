@@ -576,12 +576,22 @@ function MatchesComponent(state, filterType = 'pending') {
 
   const groupsList = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
   return `
     <div class="bg-white border border-border-light rounded-xl p-lg card-shadow">
       <div class="flex justify-between items-center mb-lg flex-wrap gap-md">
-        <div>
-          <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Pronosticar Partidos</h2>
-          <p class="font-body-sm text-body-sm text-on-surface-variant">Registra tus marcadores. Los partidos se bloquean en el horario de inicio.</p>
+        <div class="flex items-center gap-md flex-wrap">
+          <div>
+            <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Pronosticar Partidos</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Registra tus marcadores. Los partidos se bloquean en el horario de inicio.</p>
+          </div>
+          ${isLocal ? `
+            <button id="btn-dev-fill-my-predictions" class="bg-[#EA4335] text-white font-label-md text-xs px-md py-sm rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-xs ml-sm md:ml-md shadow-sm border border-red-500 animate-pulse" title="Rellenar predicciones aleatorias para fase de grupos (Sólo Local/Dev)">
+              <span class="material-symbols-outlined text-[16px]">bug_report</span>
+              Autollenar Grupos (Dev)
+            </button>
+          ` : ''}
         </div>
         
         <!-- Filter Selector tabs -->

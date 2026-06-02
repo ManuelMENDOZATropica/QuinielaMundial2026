@@ -385,6 +385,51 @@ app.post('/api/admin/system/fill-random', requireAdmin, (req, res) => {
     });
   });
 });
+// Local Development Debug Endpoint: Fill random predictions for current user (first 72 group stage matches)
+app.post('/api/dev/fill-my-predictions', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  
+  // Extra safety check: verify request originates from local interface
+  const isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+  if (!isLocal && process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: "Este endpoint de depuración sólo está disponible en entorno local." });
+  }
+
+  // Get all group stage matches (first 72 matches)
+  db.all(`SELECT id FROM matches WHERE stage = 'group' LIMIT 72`, [], (err, groupMatches) => {
+    if (err || !groupMatches) {
+      return res.status(500).json({ error: "Error al obtener partidos de grupo" });
+    }
+
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION");
+      
+      // Delete existing group stage predictions for this user to avoid conflicts
+      db.run(`DELETE FROM predictions WHERE user_id = ? AND match_id IN (SELECT id FROM matches WHERE stage = 'group' LIMIT 72)`, [userId]);
+
+      const stmt = db.prepare(`
+        INSERT INTO predictions (user_id, match_id, predicted_home_score, predicted_away_score)
+        VALUES (?, ?, ?, ?)
+      `);
+
+      groupMatches.forEach(m => {
+        const predHome = Math.floor(Math.random() * 4); // 0-3
+        const predAway = Math.floor(Math.random() * 4); // 0-3
+        stmt.run([userId, m.id, predHome, predAway]);
+      });
+
+      stmt.finalize(() => {
+        db.run("COMMIT", (err) => {
+          if (err) {
+            return res.status(500).json({ error: "Error al guardar predicciones" });
+          }
+          res.json({ success: true, message: "Fase de grupos llenada aleatoriamente." });
+        });
+      });
+    });
+  });
+});
+
 
 // Fallback to Single Page App
 app.get('*', (req, res) => {

@@ -392,6 +392,39 @@ function bindMatchesPageEvents() {
       triggerSave(matchId);
     });
   });
+
+  // Dev debug fill my predictions listener
+  const devFillBtn = document.getElementById('btn-dev-fill-my-predictions');
+  if (devFillBtn) {
+    devFillBtn.addEventListener('click', async () => {
+      devFillBtn.disabled = true;
+      devFillBtn.innerHTML = `
+        <svg class="animate-spin h-4 w-4 text-white mr-1 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Llenando...
+      `;
+
+      try {
+        const data = await API.post('/api/dev/fill-my-predictions');
+        showToast(data.message);
+        
+        // Refetch matches from backend to update state and re-render
+        const matchesData = await API.get('/api/matches');
+        state.matches = matchesData.matches;
+        
+        safeReRender();
+      } catch (err) {
+        showToast(err.message, 'error');
+        devFillBtn.disabled = false;
+        devFillBtn.innerHTML = `
+          <span class="material-symbols-outlined text-[16px]">bug_report</span>
+          Autollenar Grupos (Dev)
+        `;
+      }
+    });
+  }
 }
 
 // Safe Re-render preserving focus and current typed values
