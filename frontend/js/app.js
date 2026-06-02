@@ -633,8 +633,8 @@ function startTutorialTour(isManual = false) {
       }
     }
     
-    guideCard.style.top = \`\${top}px\`;
-    guideCard.style.left = \`\${left}px\`;
+    guideCard.style.top = `${top}px`;
+    guideCard.style.left = `${left}px`;
   }
 
   // Trigger position update after layout settles
@@ -685,20 +685,20 @@ function startTutorialTour(isManual = false) {
     awayInput.classList.remove('typing-simulated');
 
     // Reset button states inside the card
-    const saveBtn = document.getElementById(\`save-btn-\${firstCard.id.replace('match-row-', '')}\`);
-    const statusText = document.getElementById(\`status-text-\${firstCard.id.replace('match-row-', '')}\`);
+    const saveBtn = document.getElementById(`save-btn-${firstCard.id.replace('match-row-', '')}`);
+    const statusText = document.getElementById(`status-text-${firstCard.id.replace('match-row-', '')}`);
     if (saveBtn) {
       saveBtn.style.backgroundColor = '';
       saveBtn.style.color = '';
       saveBtn.textContent = 'Predecir';
     }
     if (statusText) {
-      statusText.innerHTML = \`<span class="inline-block w-1.5 h-1.5 rounded-full bg-coral mr-1"></span> Pendiente\`;
+      statusText.innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-coral mr-1"></span> Pendiente`;
     }
 
     // Update dots indicator
     for (let i = 1; i <= 3; i++) {
-      const dot = document.getElementById(\`tutorial-dot-\${i}\`);
+      const dot = document.getElementById(`tutorial-dot-${i}`);
       if (dot) {
         if (i === step) {
           dot.className = 'w-2.5 h-2.5 rounded-full bg-primary';
@@ -716,11 +716,11 @@ function startTutorialTour(isManual = false) {
     if (step === 1) {
       stepNum.textContent = '1';
       stepTitle.textContent = '1. Escribe tu Pronóstico';
-      stepText.innerHTML = \`
+      stepText.innerHTML = `
         Ingresa los goles estimados para cada equipo en los campos correspondientes.<br><br>
         <span class="text-xs text-on-surface-variant italic font-semibold">Observa la simulación:</span>
-      \`;
-      nextBtn.innerHTML = \`<span>Siguiente</span><span class="material-symbols-outlined text-[14px]">arrow_forward</span>\`;
+      `;
+      nextBtn.innerHTML = `<span>Siguiente</span><span class="material-symbols-outlined text-[14px]">arrow_forward</span>`;
 
       // Simulating typing home score
       typingTimeout1 = setTimeout(() => {
@@ -761,11 +761,11 @@ function startTutorialTour(isManual = false) {
     } else if (step === 2) {
       stepNum.textContent = '2';
       stepTitle.textContent = '2. Guardado Automático';
-      stepText.innerHTML = \`
+      stepText.innerHTML = `
         ¡Olvídate de dar clic en guardar! Al quitar el cursor del campo o pasar al siguiente partido, tu predicción se guardará al instante.<br><br>
         El botón cambiará a <span class="bg-[#6f7a70] text-white px-1.5 py-0.5 rounded text-xs font-semibold">Guardado</span> y verás un aviso de confirmación.
-      \`;
-      nextBtn.innerHTML = \`<span>Siguiente</span><span class="material-symbols-outlined text-[14px]">arrow_forward</span>\`;
+      `;
+      nextBtn.innerHTML = `<span>Siguiente</span><span class="material-symbols-outlined text-[14px]">arrow_forward</span>`;
 
       // Simulate the blur action
       homeInput.value = '2';
@@ -782,7 +782,7 @@ function startTutorialTour(isManual = false) {
           saveBtn.textContent = 'Guardado';
         }
         if (statusText) {
-          statusText.innerHTML = \`<span class="inline-block w-1.5 h-1.5 rounded-full bg-success-green mr-1"></span> Pronosticado\`;
+          statusText.innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-success-green mr-1"></span> Pronosticado`;
         }
         
         // Show a brief simulated toast
@@ -794,11 +794,11 @@ function startTutorialTour(isManual = false) {
     } else if (step === 3) {
       stepNum.textContent = '3';
       stepTitle.textContent = '3. Avanza en el Torneo';
-      stepText.innerHTML = \`
+      stepText.innerHTML = `
         Completa toda la fase de grupos. A medida que pronostiques los partidos, la siguiente fase de eliminatorias (Dieciseisavos, Octavos, etc.) se autogenerará con tus clasificados.<br><br>
         ¡Pronostica con cuidado para ganar más puntos!
-      \`;
-      nextBtn.innerHTML = \`<span>Entendido 🎉</span>\`;
+      `;
+      nextBtn.innerHTML = `<span>Entendido 🎉</span>`;
     }
   }
 
