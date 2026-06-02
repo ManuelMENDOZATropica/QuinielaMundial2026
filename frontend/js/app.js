@@ -214,6 +214,7 @@ async function router() {
       state.leaderboard = leaderboardData.leaderboard;
 
       appContainer.innerHTML = DashboardComponent(state);
+      bindMatchesPageEvents();
     } 
     else if (hash === '#matches') {
       const data = await API.get('/api/matches');
@@ -393,6 +394,37 @@ function bindMatchesPageEvents() {
   });
 }
 
+// Safe Re-render preserving focus and current typed values
+function safeReRender() {
+  const activeEl = document.activeElement;
+  let activeMatchId = null;
+  let activeTeam = null;
+  let activeValue = null;
+
+  if (activeEl && activeEl.classList.contains('prediction-input')) {
+    activeMatchId = activeEl.getAttribute('data-match-id');
+    activeTeam = activeEl.getAttribute('data-team');
+    activeValue = activeEl.value;
+  }
+
+  const appContainer = document.getElementById('app');
+  if (window.location.hash === '#matches') {
+    appContainer.innerHTML = MatchesComponent(state, state.currentMatchesFilter);
+    bindMatchesPageEvents();
+  } else if (window.location.hash === '#dashboard') {
+    appContainer.innerHTML = DashboardComponent(state);
+    bindMatchesPageEvents();
+  }
+
+  if (activeMatchId && activeTeam) {
+    const newActiveEl = document.querySelector(`.prediction-input[data-match-id="${activeMatchId}"][data-team="${activeTeam}"]`);
+    if (newActiveEl) {
+      newActiveEl.value = activeValue;
+      newActiveEl.focus();
+    }
+  }
+}
+
 // Save Prediction logic
 async function triggerSave(matchId) {
   const inputs = document.querySelectorAll(`.prediction-input[data-match-id="${matchId}"]`);
@@ -432,14 +464,8 @@ async function triggerSave(matchId) {
       localMatch.predicted_away_score = awayScore;
     }
 
-    // Re-render current page to update bracket propagation
-    const appContainer = document.getElementById('app');
-    if (window.location.hash === '#matches') {
-      appContainer.innerHTML = MatchesComponent(state, state.currentMatchesFilter);
-      bindMatchesPageEvents();
-    } else if (window.location.hash === '#dashboard') {
-      appContainer.innerHTML = DashboardComponent(state);
-    }
+    // Re-render current page to update bracket propagation safely preserving focus/value
+    safeReRender();
   } catch (err) {
     showToast(err.message, 'error');
     if (saveBtn) {
