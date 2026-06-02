@@ -50,11 +50,18 @@ function showLoader() {
   }
 }
 
+// Determine API Base URL dynamically
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? (window.location.port === '3005' ? '' : 'http://localhost:3005')
+  : 'https://quinielamundial2026-qrbj.onrender.com';
+
 // API Service Module
 const API = {
   async get(url) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(`${API_BASE}${url}`, {
+        credentials: 'include'
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ocurrió un error");
       return data;
@@ -66,10 +73,11 @@ const API = {
 
   async post(url, body) {
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`${API_BASE}${url}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        credentials: 'include'
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ocurrió un error");

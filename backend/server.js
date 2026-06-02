@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
@@ -39,6 +40,37 @@ const dbPath = path.join(__dirname, 'db/database.sqlite');
 const db = new sqlite3.Database(dbPath);
 
 // Middlewares
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3005',
+  'http://localhost:5173',
+  'http://localhost:5500',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3005',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5500',
+  'https://www.mundial.tropica.me',
+  'https://mundial.tropica.me'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or same-origin)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.includes(origin) || 
+                      origin.endsWith('.vercel.app') || 
+                      origin.endsWith('.tropica.me');
+                      
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../frontend')));
@@ -101,9 +133,11 @@ app.post('/api/auth/register', (req, res) => {
     const userId = this.lastID;
     const token = jwt.sign({ id: userId, name: name.trim(), email: email.trim().toLowerCase(), is_admin: 0 }, JWT_SECRET, { expiresIn: '7d' });
 
+    const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -135,9 +169,11 @@ app.post('/api/auth/login', (req, res) => {
 
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '7d' });
 
+    const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
