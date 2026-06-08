@@ -621,6 +621,16 @@ app.post('/api/dev/fill-my-predictions', authenticateToken, (req, res) => {
 });
 
 
+// Temporary Environment Debug Endpoint
+app.get('/api/debug-env', (req, res) => {
+  res.json({
+    GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL,
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    HAS_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID
+  });
+});
+
 // Fallback to Single Page App
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
