@@ -54,7 +54,7 @@ function showLoader() {
 // Determine API Base URL dynamically
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? (window.location.port === '3005' ? '' : 'http://localhost:3005')
-  : 'https://quinielamundial2026-qrbj.onrender.com';
+  : '';
 
 // API Service Module
 const API = {
