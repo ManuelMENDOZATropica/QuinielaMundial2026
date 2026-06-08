@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: quiniela-mundial
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3005
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: quiniela-db
+          property: connectionString
+
+databases:
+  - name: quiniela-db
+    plan: free
