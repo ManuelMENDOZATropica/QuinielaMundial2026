@@ -86,7 +86,12 @@ function authenticateToken(req, res, next) {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      res.clearCookie('token');
+      const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
+      res.clearCookie('token', {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax'
+      });
       return res.status(403).json({ error: "Token inválido o expirado" });
     }
     req.user = user;
@@ -187,7 +192,12 @@ app.post('/api/auth/login', (req, res) => {
 
 // Logout User
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('token');
+  const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax'
+  });
   res.json({ success: true, message: "Sesión cerrada correctamente" });
 });
 
@@ -200,7 +210,12 @@ app.get('/api/auth/me', (req, res) => {
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) {
-      res.clearCookie('token');
+      const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
+      res.clearCookie('token', {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax'
+      });
       return res.json({ user: null });
     }
     res.json({ user: decoded });
