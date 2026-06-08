@@ -117,16 +117,6 @@ function updateShellUI() {
 
   const isAdmin = state.user && state.user.is_admin === 1;
 
-  // Dynamic Navigation Label update
-  const predictionsTab = document.querySelector('a[href="#matches"].nav-tab');
-  if (predictionsTab) {
-    predictionsTab.textContent = isAdmin ? 'Resultados' : 'Predicciones';
-  }
-  const predictionsMobileTab = document.querySelector('a[href="#matches"] .font-label-md');
-  if (predictionsMobileTab) {
-    predictionsMobileTab.textContent = isAdmin ? 'Resultados' : 'Jugar';
-  }
-
   if (state.user) {
     // Show navigation bars
     if (header) header.classList.remove('hidden');
@@ -814,7 +804,6 @@ async function triggerSave(matchId) {
   const awayScore = parseInt(awayVal);
 
   const saveBtn = document.getElementById(`save-btn-${matchId}`);
-  const isAdmin = state.user && state.user.is_admin === 1;
 
   if (saveBtn) {
     saveBtn.disabled = true;
@@ -822,36 +811,18 @@ async function triggerSave(matchId) {
   }
 
   try {
-    if (isAdmin) {
-      // Admin saves official score
-      await API.post(`/api/admin/matches/${matchId}/score`, {
-        home_score: homeScore,
-        away_score: awayScore,
-        status: 'finished'
-      });
-      showToast("Resultado oficial guardado");
-      
-      // Update local state
-      const localMatch = state.matches.find(m => m.id == matchId);
-      if (localMatch) {
-        localMatch.home_score = homeScore;
-        localMatch.away_score = awayScore;
-        localMatch.status = 'finished';
-      }
-    } else {
-      // Normal user saves prediction
-      await API.post(`/api/matches/${matchId}/predict`, {
-        home_score: homeScore,
-        away_score: awayScore
-      });
-      showToast("Predicción guardada");
-      
-      // Update local state
-      const localMatch = state.matches.find(m => m.id == matchId);
-      if (localMatch) {
-        localMatch.predicted_home_score = homeScore;
-        localMatch.predicted_away_score = awayScore;
-      }
+    // Save prediction
+    await API.post(`/api/matches/${matchId}/predict`, {
+      home_score: homeScore,
+      away_score: awayScore
+    });
+    showToast("Predicción guardada");
+    
+    // Update local state
+    const localMatch = state.matches.find(m => m.id == matchId);
+    if (localMatch) {
+      localMatch.predicted_home_score = homeScore;
+      localMatch.predicted_away_score = awayScore;
     }
 
     // Re-render current page to update bracket propagation safely preserving focus/value
@@ -860,7 +831,7 @@ async function triggerSave(matchId) {
     showToast(err.message, 'error');
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.textContent = isAdmin ? 'Guardar' : 'Predecir';
+      saveBtn.textContent = 'Predecir';
     }
   }
 }
@@ -878,14 +849,10 @@ function triggerAutoSave(matchId) {
 
   if (homeVal !== '' && awayVal !== '') {
     const localMatch = state.matches.find(m => m.id == matchId);
-    if (localMatch) {
-      const isAdmin = state.user && state.user.is_admin === 1;
-      const currentHome = isAdmin ? localMatch.home_score : localMatch.predicted_home_score;
-      const currentAway = isAdmin ? localMatch.away_score : localMatch.predicted_away_score;
-      
-      if (currentHome !== parseInt(homeVal) || currentAway !== parseInt(awayVal)) {
-        triggerSave(matchId);
-      }
+    if (localMatch && 
+        (localMatch.predicted_home_score !== parseInt(homeVal) || 
+         localMatch.predicted_away_score !== parseInt(awayVal))) {
+      triggerSave(matchId);
     }
   }
 }

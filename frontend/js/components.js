@@ -451,14 +451,13 @@ function DashboardComponent(state) {
             ` : `
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-md">
                 ${pendingMatches.map(m => {
-                  const isAdmin = user && user.is_admin === 1;
-                  const homeVal = isAdmin ? (m.home_score !== null ? m.home_score : '') : '';
-                  const awayVal = isAdmin ? (m.away_score !== null ? m.away_score : '') : '';
-                  const hasPrediction = isAdmin ? (m.home_score !== null) : false; // Dashboard only shows pending predictions for normal users
-                  const statusLabel = isAdmin ? (m.home_score !== null ? 'Oficial' : 'Sin Resultado') : 'Pendiente';
-                  const btnLabel = isAdmin ? (m.home_score !== null ? 'Guardado' : 'Guardar') : 'Predecir';
-                  const statusColorClass = isAdmin ? (m.home_score !== null ? 'bg-success-green' : 'bg-coral') : 'bg-coral';
-                  const btnColorStyle = isAdmin && m.home_score !== null ? 'background-color:#6f7a70' : '';
+                  const hasPrediction = m.predicted_home_score !== null;
+                  const homeVal = hasPrediction ? m.predicted_home_score : '';
+                  const awayVal = hasPrediction ? m.predicted_away_score : '';
+                  const statusLabel = hasPrediction ? 'Pronosticado' : 'Pendiente';
+                  const btnLabel = hasPrediction ? 'Guardado' : 'Predecir';
+                  const statusColorClass = hasPrediction ? 'bg-success-green' : 'bg-coral';
+                  const btnColorStyle = hasPrediction ? 'background-color:#6f7a70' : '';
 
                   return `
                     <!-- Dynamic Match Card -->
@@ -554,18 +553,13 @@ function DashboardComponent(state) {
 function MatchesComponent(state, filterType = 'pending') {
   const matches = resolveMatchesTeams(state.matches || []);
   const now = Date.now();
-  const isAdmin = state.user && state.user.is_admin === 1;
 
   // Apply filters
   let filteredMatches = [];
   if (filterType === 'pending') {
-    filteredMatches = isAdmin ?
-      matches.filter(m => m.home_score === null) :
-      matches.filter(m => m.predicted_home_score === null && new Date(m.match_date).getTime() > now);
+    filteredMatches = matches.filter(m => m.predicted_home_score === null && new Date(m.match_date).getTime() > now);
   } else if (filterType === 'completed') {
-    filteredMatches = isAdmin ?
-      matches.filter(m => m.home_score !== null) :
-      matches.filter(m => m.predicted_home_score !== null);
+    filteredMatches = matches.filter(m => m.predicted_home_score !== null);
   } else if (filterType === 'finished') {
     filteredMatches = matches.filter(m => m.status === 'finished');
   } else if (filterType.startsWith('group-')) {
@@ -586,38 +580,26 @@ function MatchesComponent(state, filterType = 'pending') {
       <div class="flex justify-between items-center mb-lg flex-wrap gap-md">
         <div class="flex items-center gap-md flex-wrap">
           <div>
-            <h2 class="font-headline-md text-headline-md text-on-surface font-bold">
-              ${isAdmin ? 'Administrar Resultados' : 'Pronosticar Partidos'}
-            </h2>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">
-              ${isAdmin ? 'Registra los marcadores oficiales de los partidos.' : 'Registra tus marcadores. Los partidos se bloquean en el horario de inicio.'}
-            </p>
+            <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Pronosticar Partidos</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Registra tus marcadores. Los partidos se bloquean en el horario de inicio.</p>
           </div>
-          ${isLocal && !isAdmin ? `
+          ${isLocal ? `
             <button id="btn-dev-fill-my-predictions" class="bg-[#EA4335] text-white font-label-md text-xs px-md py-sm rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-xs ml-sm md:ml-md shadow-sm border border-red-500 animate-pulse" title="Rellenar predicciones aleatorias para fase de grupos (Sólo Local/Dev)">
               <span class="material-symbols-outlined text-[16px]">bug_report</span>
               Autollenar Grupos (Dev)
             </button>
           ` : ''}
-          ${!isAdmin ? `
-            <button id="btn-start-tutorial" class="bg-primary/10 text-primary font-label-md text-xs px-md py-sm rounded-lg hover:bg-primary/20 active:scale-95 transition-all flex items-center gap-xs ml-sm md:ml-md border border-primary/20" title="Ver tutorial de cómo jugar">
-              <span class="material-symbols-outlined text-[16px]">help</span>
-              Cómo Jugar
-            </button>
-          ` : ''}
+          <button id="btn-start-tutorial" class="bg-primary/10 text-primary font-label-md text-xs px-md py-sm rounded-lg hover:bg-primary/20 active:scale-95 transition-all flex items-center gap-xs ml-sm md:ml-md border border-primary/20" title="Ver tutorial de cómo jugar">
+            <span class="material-symbols-outlined text-[16px]">help</span>
+            Cómo Jugar
+          </button>
         </div>
         
         <!-- Filter Selector tabs -->
         <div class="flex flex-wrap gap-xs bg-surface-gray border border-border-light p-1 rounded-lg">
-          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'pending' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="pending">
-            ${isAdmin ? 'Sin Resultado' : 'Pendientes'}
-          </button>
-          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'completed' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="completed">
-            ${isAdmin ? 'Con Resultado' : 'Pronosticados'}
-          </button>
-          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'finished' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="finished">
-            ${isAdmin ? 'Finalizados' : 'Resultados'}
-          </button>
+          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'pending' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="pending">Pendientes</button>
+          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'completed' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="completed">Pronosticados</button>
+          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'finished' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="finished">Resultados</button>
           <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'all' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="all">Todos</button>
         </div>
       </div>
@@ -669,36 +651,12 @@ function MatchesComponent(state, filterType = 'pending') {
               <!-- Cards Grid for this date -->
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
                 ${matchesInDate.map(m => {
-                  const isLocked = !isAdmin && new Date(m.match_date).getTime() <= now;
+                  const isLocked = new Date(m.match_date).getTime() <= now;
                   const isFinished = m.status === 'finished';
-                  const hasPrediction = isAdmin ? (m.home_score !== null) : (m.predicted_home_score !== null);
-                  const homeScoreVal = isAdmin ? (m.home_score !== null ? m.home_score : '') : (m.predicted_home_score !== null ? m.predicted_home_score : '');
-                  const awayScoreVal = isAdmin ? (m.away_score !== null ? m.away_score : '') : (m.predicted_away_score !== null ? m.predicted_away_score : '');
+                  const hasPrediction = m.predicted_home_score !== null;
+                  const homeScoreVal = hasPrediction ? m.predicted_home_score : '';
+                  const awayScoreVal = hasPrediction ? m.predicted_away_score : '';
                   const stageLabel = m.stage === 'group' ? `Grupo ${m.group_name}` : (m.stage === 'r32' ? 'Dieciseisavos' : m.stage.toUpperCase());
-
-                  const buttonLabel = isAdmin ? (hasPrediction ? 'Guardado' : 'Guardar') : (hasPrediction ? 'Guardado' : 'Predecir');
-                  const showSaveBtn = isAdmin || (!isLocked && !isFinished);
-
-                  let statusHTML = '';
-                  if (isAdmin) {
-                    statusHTML = hasPrediction ? 
-                      `<span class="font-label-md text-xs text-success-green font-bold">Resultado Oficial</span>` : 
-                      `<span class="text-xs text-coral" id="status-text-${m.id}"><span class="inline-block w-1.5 h-1.5 rounded-full bg-coral mr-1"></span>Sin Resultado</span>`;
-                  } else {
-                    statusHTML = isFinished ? `
-                      <span class="font-label-md text-xs text-success-green font-bold">
-                        Oficial: ${m.home_score}-${m.away_score}
-                      </span>
-                      <span class="text-[11px] font-bold text-primary">+${m.points_earned} pts</span>
-                    ` : (isLocked ? `
-                      <span class="text-xs text-on-surface-variant italic">Bloqueado</span>
-                    ` : `
-                      <span class="text-xs text-coral" id="status-text-${m.id}">
-                        <span class="inline-block w-1.5 h-1.5 rounded-full ${hasPrediction ? 'bg-success-green' : 'bg-coral'} mr-1"></span>
-                        ${hasPrediction ? 'Pronosticado' : 'Pendiente'}
-                      </span>
-                    `);
-                  }
 
                   return `
                     <div class="bg-surface-gray border ${hasPrediction ? 'border-primary/40 bg-primary/5' : 'border-border-light'} rounded-xl overflow-hidden flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer group" id="match-row-${m.id}">
@@ -750,13 +708,25 @@ function MatchesComponent(state, filterType = 'pending') {
                         <!-- Bottom Action -->
                         <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
                           <div class="flex flex-col">
-                            ${statusHTML}
+                            ${isFinished ? `
+                              <span class="font-label-md text-xs text-success-green font-bold">
+                                Oficial: ${m.home_score}-${m.away_score}
+                              </span>
+                              <span class="text-[11px] font-bold text-primary">+${m.points_earned} pts</span>
+                            ` : (isLocked ? `
+                              <span class="text-xs text-on-surface-variant italic">Bloqueado</span>
+                            ` : `
+                              <span class="text-xs text-coral" id="status-text-${m.id}">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full ${hasPrediction ? 'bg-success-green' : 'bg-coral'} mr-1"></span>
+                                ${hasPrediction ? 'Pronosticado' : 'Pendiente'}
+                              </span>
+                            `)}
                           </div>
                           <div>
-                            ${showSaveBtn ? `
+                            ${!isLocked && !isFinished ? `
                               <button class="bg-primary text-on-primary px-sm py-0.5 rounded font-label-md text-xs btn-save-prediction hover:opacity-90 transition-opacity" 
                                       data-match-id="${m.id}" id="save-btn-${m.id}" style="${hasPrediction ? 'background-color:#6f7a70' : ''}">
-                                ${buttonLabel}
+                                ${hasPrediction ? 'Guardado' : 'Predecir'}
                               </button>
                             ` : ''}
                           </div>
