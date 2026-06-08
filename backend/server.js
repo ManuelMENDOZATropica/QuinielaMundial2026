@@ -58,7 +58,8 @@ app.use(cors({
     
     const isAllowed = allowedOrigins.includes(origin) || 
                       origin.endsWith('.vercel.app') || 
-                      origin.endsWith('.tropica.me');
+                      origin.endsWith('.tropica.me') ||
+                      origin.endsWith('.onrender.com');
                       
     if (isAllowed) {
       callback(null, true);
