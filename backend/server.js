@@ -37,6 +37,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'tropica-mundial-2026-secret-key-12
 // Connect to Database (Supports both SQLite and PostgreSQL dynamically)
 const db = require('./db/db');
 
+// Initialize database tables and seed data automatically on startup
+require('./db/init_db');
+
 // Middlewares
 const allowedOrigins = [
   'http://localhost:3000',
