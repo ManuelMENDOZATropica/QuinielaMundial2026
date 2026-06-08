@@ -246,7 +246,7 @@ function resolveMatchesTeams(matches) {
 }
 
 // 1. Auth Page Component (Login / Register)
-function LoginRegisterComponent(isRegister = false) {
+function LoginRegisterComponent() {
   return `
     <main class="relative min-h-[80vh] w-full flex items-center justify-center lg:justify-start px-margin-mobile md:px-margin-desktop py-lg">
       <!-- Background Decoration -->
@@ -273,15 +273,15 @@ function LoginRegisterComponent(isRegister = false) {
           <div class="bg-surface-gray border border-border-light rounded-xl p-xl space-y-lg shadow-sm">
             <div class="space-y-sm">
               <p class="font-label-lg text-label-lg uppercase tracking-wider text-on-surface-variant">
-                ${isRegister ? 'Crear Cuenta' : 'Bienvenido de nuevo'}
+                Acceso Corporativo
               </p>
               <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
-                ${isRegister ? 'Completa tus datos para unirte' : 'Accede para gestionar tus predicciones'}
+                Accede para gestionar tus predicciones
               </h2>
             </div>
             
             <div class="space-y-md">
-              <!-- Google Login CTA (Mock OAuth for fast testing) -->
+              <!-- Google Login CTA -->
               <button type="button" class="group w-full h-14 flex items-center justify-center gap-md bg-surface-container-lowest border border-border-light hover:border-primary-container hover:bg-primary-container/5 rounded-lg transition-all duration-200 active:scale-[0.98]" id="btn-google-oauth">
                 <svg class="w-6 h-6" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
@@ -294,33 +294,6 @@ function LoginRegisterComponent(isRegister = false) {
                 </span>
               </button>
               
-              <div class="relative flex py-2 items-center">
-                <div class="flex-grow border-t border-border-light"></div>
-                <span class="flex-shrink mx-4 text-on-surface-variant font-label-md text-label-md uppercase">O ingresa con contraseña</span>
-                <div class="flex-grow border-t border-border-light"></div>
-              </div>
-              
-              <!-- Standard Auth Form -->
-              <form id="auth-form" class="space-y-sm">
-                ${isRegister ? `
-                  <div class="form-group flex flex-col gap-xs">
-                    <label for="reg-name" class="font-label-md text-label-md text-on-surface-variant">Nombre Completo</label>
-                    <input type="text" id="reg-name" class="w-full border border-border-light rounded-lg px-md py-sm focus:ring-1 focus:ring-primary focus:border-primary bg-white text-body-md" placeholder="Ej. Carlos R." required>
-                  </div>
-                ` : ''}
-                <div class="form-group flex flex-col gap-xs">
-                  <label for="auth-email" class="font-label-md text-label-md text-on-surface-variant">Correo Corporativo</label>
-                  <input type="email" id="auth-email" class="w-full border border-border-light rounded-lg px-md py-sm focus:ring-1 focus:ring-primary focus:border-primary bg-white text-body-md" placeholder="carlos@tropica.me" required>
-                </div>
-                <div class="form-group flex flex-col gap-xs">
-                  <label for="auth-password" class="font-label-md text-label-md text-on-surface-variant">Contraseña</label>
-                  <input type="password" id="auth-password" class="w-full border border-border-light rounded-lg px-md py-sm focus:ring-1 focus:ring-primary focus:border-primary bg-white text-body-md" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="w-full bg-primary hover:bg-primary-container text-on-primary py-md rounded-lg font-label-lg text-label-lg transition-colors active:scale-95 duration-100" id="btn-auth-submit">
-                  ${isRegister ? 'Registrarse' : 'Iniciar Sesión'}
-                </button>
-              </form>
-              
               <p class="text-center font-body-sm text-body-sm text-on-surface-variant mt-sm">
                 Acceso restringido únicamente para dominios <span class="text-primary font-semibold">tropica.me</span>
               </p>
@@ -329,11 +302,8 @@ function LoginRegisterComponent(isRegister = false) {
             <div class="pt-md border-t border-border-light flex items-center justify-between">
               <div class="flex items-center gap-xs">
                 <span class="material-symbols-outlined text-success-green" style="font-size: 18px;">verified_user</span>
-                <span class="font-label-md text-label-md text-on-surface-variant">Acceso Seguro</span>
+                <span class="font-label-md text-label-md text-on-surface-variant">Acceso Seguro Único</span>
               </div>
-              <a class="font-label-md text-label-md text-primary hover:underline transition-all" href="${isRegister ? '#login' : '#register'}">
-                ${isRegister ? '¿Ya tienes cuenta? Ingresa' : '¿No tienes cuenta? Regístrate'}
-              </a>
             </div>
           </div>
           

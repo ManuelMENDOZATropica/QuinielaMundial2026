@@ -185,13 +185,9 @@ async function router() {
   showLoader();
 
   try {
-    if (hash === '#login') {
-      appContainer.innerHTML = LoginRegisterComponent(false);
-      bindAuthPageEvents(false);
-    } 
-    else if (hash === '#register') {
-      appContainer.innerHTML = LoginRegisterComponent(true);
-      bindAuthPageEvents(true);
+    if (hash === '#login' || hash === '#register') {
+      appContainer.innerHTML = LoginRegisterComponent();
+      bindAuthPageEvents();
     } 
     else if (hash === '#dashboard') {
       const [matchesData, leaderboardData] = await Promise.all([
@@ -247,7 +243,7 @@ async function router() {
 }
 
 // BIND EVENTS FOR LOGIN/REGISTER
-function bindAuthPageEvents(isRegister) {
+function bindAuthPageEvents() {
   // Google Login click event (Real Google OAuth redirect)
   const googleBtn = document.getElementById('btn-google-oauth');
   if (googleBtn) {
@@ -262,41 +258,6 @@ function bindAuthPageEvents(isRegister) {
       `;
       // Redirect to backend Google OAuth route
       window.location.href = `${API_BASE}/api/auth/google`;
-    });
-  }
-
-  // Password Login / Register Form submit
-  const form = document.getElementById('auth-form');
-  if (form) {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const email = document.getElementById('auth-email').value;
-      const password = document.getElementById('auth-password').value;
-      const submitBtn = document.getElementById('btn-auth-submit');
-      
-      let name = '';
-      if (isRegister) {
-        name = document.getElementById('reg-name').value;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Procesando...';
-
-      try {
-        const url = isRegister ? '/api/auth/register' : '/api/auth/login';
-        const body = isRegister ? { name, email, password } : { email, password };
-        
-        const data = await API.post(url, body);
-        state.user = data.user;
-        
-        showToast(isRegister ? "¡Registro completado! Bienvenido." : "Sesión iniciada.");
-        window.location.hash = '#matches';
-      } catch (err) {
-        showToast(err.message, 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = isRegister ? 'Registrarse' : 'Iniciar Sesión';
-      }
     });
   }
 }
