@@ -102,8 +102,9 @@ function authenticateToken(req, res, next) {
 // Admin Check Middleware
 function requireAdmin(req, res, next) {
   authenticateToken(req, res, () => {
-    if (!req.user || req.user.is_admin !== 1) {
-      return res.status(403).json({ error: "Acceso denegado. Se requiere cuenta de administrador." });
+    const adminEmails = ['manuel@tropica.me', 'luis@tropica.me'];
+    if (!req.user || !adminEmails.includes(req.user.email.toLowerCase().trim())) {
+      return res.status(403).json({ error: "Acceso denegado. Se requiere cuenta de administrador autorizada." });
     }
     next();
   });
@@ -138,7 +139,15 @@ app.post('/api/auth/register', (req, res) => {
     }
 
     const userId = this.lastID;
-    const token = jwt.sign({ id: userId, name: name.trim(), email: email.trim().toLowerCase(), is_admin: 0 }, JWT_SECRET, { expiresIn: '7d' });
+    const adminEmails = ['manuel@tropica.me', 'luis@tropica.me'];
+    const isAdmin = adminEmails.includes(email.trim().toLowerCase()) ? 1 : 0;
+    
+    // Ensure database reflects actual admin state
+    if (isAdmin) {
+      db.run(`UPDATE users SET is_admin = 1 WHERE id = ?`, [userId]);
+    }
+
+    const token = jwt.sign({ id: userId, name: name.trim(), email: email.trim().toLowerCase(), is_admin: isAdmin }, JWT_SECRET, { expiresIn: '7d' });
 
     const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
     res.cookie('token', token, {
@@ -149,7 +158,7 @@ app.post('/api/auth/register', (req, res) => {
     });
 
     res.status(201).json({
-      user: { id: userId, name: name.trim(), email: email.trim().toLowerCase(), is_admin: 0 }
+      user: { id: userId, name: name.trim(), email: email.trim().toLowerCase(), is_admin: isAdmin }
     });
   });
 });
@@ -174,7 +183,15 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: "Correo electrónico o contraseña incorrectos" });
     }
 
-    const token = jwt.sign({ id: user.id, name: user.name, email: user.email, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '7d' });
+    const adminEmails = ['manuel@tropica.me', 'luis@tropica.me'];
+    const isAdmin = adminEmails.includes(user.email.trim().toLowerCase()) ? 1 : 0;
+    
+    // Auto-update admin status in database
+    if (user.is_admin !== isAdmin) {
+      db.run(`UPDATE users SET is_admin = ? WHERE id = ?`, [isAdmin, user.id]);
+    }
+
+    const token = jwt.sign({ id: user.id, name: user.name, email: user.email, is_admin: isAdmin }, JWT_SECRET, { expiresIn: '7d' });
 
     const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
     res.cookie('token', token, {
@@ -185,7 +202,7 @@ app.post('/api/auth/login', (req, res) => {
     });
 
     res.json({
-      user: { id: user.id, name: user.name, email: user.email, is_admin: user.is_admin }
+      user: { id: user.id, name: user.name, email: user.email, is_admin: isAdmin }
     });
   });
 });
@@ -267,10 +284,17 @@ app.get('/api/auth/google/callback', async (req, res) => {
       
       const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
       
+      const adminEmails = ['manuel@tropica.me', 'luis@tropica.me'];
+      const isAdmin = adminEmails.includes(email.toLowerCase().trim()) ? 1 : 0;
+
       if (user) {
-        // Log in user
+        // Log in user and update database admin status if mismatch
+        if (user.is_admin !== isAdmin) {
+          db.run(`UPDATE users SET is_admin = ? WHERE id = ?`, [isAdmin, user.id]);
+        }
+
         const token = jwt.sign(
-          { id: user.id, name: user.name, email: user.email, is_admin: user.is_admin },
+          { id: user.id, name: user.name, email: user.email, is_admin: isAdmin },
           JWT_SECRET,
           { expiresIn: '7d' }
         );
@@ -288,9 +312,9 @@ app.get('/api/auth/google/callback', async (req, res) => {
         const randomPassword = bcrypt.hashSync(Math.random().toString(36), 10);
         
         db.run(`
-          INSERT INTO users (name, email, password_hash)
-          VALUES (?, ?, ?)
-        `, [name, email.toLowerCase().trim(), randomPassword], function(err) {
+          INSERT INTO users (name, email, password_hash, is_admin)
+          VALUES (?, ?, ?, ?)
+        `, [name, email.toLowerCase().trim(), randomPassword, isAdmin], function(err) {
           if (err) {
             console.error("Error creating user via Google:", err);
             return res.status(500).send("Error al registrar el usuario nuevo");
@@ -298,7 +322,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
           
           const newUserId = this.lastID;
           const token = jwt.sign(
-            { id: newUserId, name: name, email: email.toLowerCase().trim(), is_admin: 0 },
+            { id: newUserId, name: name, email: email.toLowerCase().trim(), is_admin: isAdmin },
             JWT_SECRET,
             { expiresIn: '7d' }
           );
@@ -349,6 +373,8 @@ app.get('/api/auth/me', (req, res) => {
       });
       return res.json({ user: null });
     }
+    const adminEmails = ['manuel@tropica.me', 'luis@tropica.me'];
+    decoded.is_admin = adminEmails.includes(decoded.email.toLowerCase().trim()) ? 1 : 0;
     res.json({ user: decoded });
   });
 });

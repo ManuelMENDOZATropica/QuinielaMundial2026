@@ -450,54 +450,71 @@ function DashboardComponent(state) {
               </div>
             ` : `
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-md">
-                ${pendingMatches.map(m => `
-                  <!-- Dynamic Match Card -->
-                  <div class="bg-surface-gray border border-border-light rounded-xl p-md flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'BUTTON') window.location.hash='#matches'">
-                    <!-- Top Meta -->
-                    <div class="flex justify-between items-center text-label-md text-on-surface-variant opacity-80 mb-sm">
-                      <span class="font-semibold uppercase tracking-wider">Grupo ${m.group_name}</span>
-                      <span class="font-medium text-[11px]">${formatDate(m.match_date)}</span>
-                    </div>
+                ${pendingMatches.map(m => {
+                  const isAdmin = user && user.is_admin === 1;
+                  const homeVal = isAdmin ? (m.home_score !== null ? m.home_score : '') : '';
+                  const awayVal = isAdmin ? (m.away_score !== null ? m.away_score : '') : '';
+                  const hasPrediction = isAdmin ? (m.home_score !== null) : false; // Dashboard only shows pending predictions for normal users
+                  const statusLabel = isAdmin ? (m.home_score !== null ? 'Oficial' : 'Sin Resultado') : 'Pendiente';
+                  const btnLabel = isAdmin ? (m.home_score !== null ? 'Guardado' : 'Guardar') : 'Predecir';
+                  const statusColorClass = isAdmin ? (m.home_score !== null ? 'bg-success-green' : 'bg-coral') : 'bg-coral';
+                  const btnColorStyle = isAdmin && m.home_score !== null ? 'background-color:#6f7a70' : '';
 
-                    <!-- Middle: Flags & Inputs directly below flags -->
-                    <div class="flex items-center justify-between my-sm">
-                      <!-- Team Home -->
-                      <div class="flex flex-col items-center flex-1">
-                        <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
-                          <img alt="${m.home_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+                  return `
+                    <!-- Dynamic Match Card -->
+                    <div class="bg-surface-gray border border-border-light rounded-xl overflow-hidden flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer group" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'BUTTON') window.location.hash='#matches'" id="match-row-dash-${m.id}">
+                      <!-- Stadium Image Header -->
+                      <div class="w-full h-24 overflow-hidden relative">
+                        <img alt="Estadio" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnbTCYAi3Ely4vxtUR6W1rHw9_ycDDpy199QBsGZMum5I18t2Fcla3iY2l21x9PpmP4ZrFkGlqZWUq0mRsEhv4Y_jj1flHqkymbmVxlZK8WPCai_NluxVOwuRKAWZneJm-nTLfMRCemwRVMHslt114XhMPEzGCXFAINL6i8iUfNRtLdjhDIVFHbg7gn_didIUP7vwpdGR2x4ccYBuZDKtP9ZC7_blPdc_VlDUZZZNF6ss0Q6In9LN53gc67dLx7mJXcMrv8rPEA2kp"/>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-xs left-md text-white flex justify-between w-[calc(100%-1.5rem)] items-center">
+                          <span class="font-semibold text-xs uppercase tracking-wider text-white opacity-90">Grupo ${m.group_name}</span>
+                          <span class="font-medium text-[11px] text-white opacity-90">${formatDate(m.match_date)}</span>
                         </div>
-                        <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
-                               type="number" min="0" max="99" placeholder="-"
-                               data-match-id="${m.id}" data-team="home" value=""/>
-                        <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
-                        <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.home_team}">${m.home_team}</span>
                       </div>
 
-                      <!-- VS -->
-                      <span class="font-label-md text-label-md text-on-surface-variant font-bold px-sm">VS</span>
+                      <div class="p-md flex flex-col justify-between flex-1">
+                        <!-- Middle: Flags & Inputs directly below flags -->
+                        <div class="flex items-center justify-between my-sm">
+                          <!-- Team Home -->
+                          <div class="flex flex-col items-center flex-1">
+                            <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
+                              <img alt="${m.home_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+                            </div>
+                            <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
+                                   type="number" min="0" max="99" placeholder="-"
+                                   data-match-id="${m.id}" data-team="home" value="${homeVal}"/>
+                            <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
+                            <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.home_team}">${m.home_team}</span>
+                          </div>
 
-                      <!-- Team Away -->
-                      <div class="flex flex-col items-center flex-1">
-                        <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
-                          <img alt="${m.away_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+                          <!-- VS -->
+                          <span class="font-label-md text-label-md text-on-surface-variant font-bold px-sm">VS</span>
+
+                          <!-- Team Away -->
+                          <div class="flex flex-col items-center flex-1">
+                            <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
+                              <img alt="${m.away_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+                            </div>
+                            <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
+                                   type="number" min="0" max="99" placeholder="-"
+                                   data-match-id="${m.id}" data-team="away" value="${awayVal}"/>
+                            <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
+                            <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.away_team}">${m.away_team}</span>
+                          </div>
                         </div>
-                        <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
-                               type="number" min="0" max="99" placeholder="-"
-                               data-match-id="${m.id}" data-team="away" value=""/>
-                        <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
-                        <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.away_team}">${m.away_team}</span>
+
+                        <!-- Bottom Action -->
+                        <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
+                          <span class="text-xs text-coral" id="status-text-${m.id}">
+                            <span class="inline-block w-1.5 h-1.5 rounded-full ${statusColorClass} mr-1"></span> ${statusLabel}
+                          </span>
+                          <button class="bg-primary text-on-primary px-sm py-0.5 rounded font-label-md text-xs btn-save-prediction" data-match-id="${m.id}" id="save-btn-${m.id}" style="${btnColorStyle}">${btnLabel}</button>
+                        </div>
                       </div>
                     </div>
-
-                    <!-- Bottom Action -->
-                    <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
-                      <span class="text-xs text-coral" id="status-text-${m.id}">
-                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-coral mr-1"></span> Pendiente
-                      </span>
-                      <button class="bg-primary text-on-primary px-sm py-0.5 rounded font-label-md text-xs btn-save-prediction" data-match-id="${m.id}" id="save-btn-${m.id}">Predecir</button>
-                    </div>
-                  </div>
-                `).join('')}
+                  `;
+                }).join('')}
               </div>
             `}
           </div>
@@ -530,27 +547,6 @@ function DashboardComponent(state) {
         </div>
       </div>
     </div>
-    
-    <!-- News/Rules Carousel Area -->
-    <section class="mt-xl">
-      <div class="bg-white border border-border-light rounded-xl p-lg card-shadow overflow-hidden flex flex-col md:flex-row gap-lg items-center">
-        <div class="flex-1">
-          <span class="bg-accent-gold/20 text-on-secondary-container px-md py-xs rounded-full font-label-md text-label-md mb-md inline-block">Novedad</span>
-          <h2 class="font-headline-md text-headline-md text-on-surface mb-md">¡Compite con el equipo de Trópica!</h2>
-          <p class="font-body-md text-body-md text-on-surface-variant mb-lg">Participa en la quiniela interna oficial. Registra tus aciertos para cada uno de los 72 partidos de grupos del Mundial. ¡Demuestra quién sabe más de fútbol en la oficina!</p>
-          <div class="flex gap-md">
-            <a href="#matches" class="bg-primary text-on-primary px-xl py-md rounded-lg font-label-lg text-label-lg hover:opacity-90 transition-opacity">Ver Partidos</a>
-            <a href="#leaderboard" class="text-primary px-xl py-md rounded-lg font-label-lg text-label-lg hover:bg-primary/5 transition-colors">Ver Ranking</a>
-          </div>
-        </div>
-        <div class="w-full md:w-1/3 h-48 rounded-lg overflow-hidden relative group">
-          <img alt="Football stadium" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnbTCYAi3Ely4vxtUR6W1rHw9_ycDDpy199QBsGZMum5I18t2Fcla3iY2l21x9PpmP4ZrFkGlqZWUq0mRsEhv4Y_jj1flHqkymbmVxlZK8WPCai_NluxVOwuRKAWZneJm-nTLfMRCemwRVMHslt114XhMPEzGCXFAINL6i8iUfNRtLdjhDIVFHbg7gn_didIUP7vwpdGR2x4ccYBuZDKtP9ZC7_blPdc_VlDUZZZNF6ss0Q6In9LN53gc67dLx7mJXcMrv8rPEA2kp"/>
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-md">
-            <p class="text-white font-label-lg text-label-lg">Estadio Azteca - Inauguración 2026</p>
-          </div>
-        </div>
-      </div>
-    </section>
   `;
 }
 
@@ -558,13 +554,18 @@ function DashboardComponent(state) {
 function MatchesComponent(state, filterType = 'pending') {
   const matches = resolveMatchesTeams(state.matches || []);
   const now = Date.now();
+  const isAdmin = state.user && state.user.is_admin === 1;
 
   // Apply filters
   let filteredMatches = [];
   if (filterType === 'pending') {
-    filteredMatches = matches.filter(m => m.predicted_home_score === null && new Date(m.match_date).getTime() > now);
+    filteredMatches = isAdmin ?
+      matches.filter(m => m.home_score === null) :
+      matches.filter(m => m.predicted_home_score === null && new Date(m.match_date).getTime() > now);
   } else if (filterType === 'completed') {
-    filteredMatches = matches.filter(m => m.predicted_home_score !== null);
+    filteredMatches = isAdmin ?
+      matches.filter(m => m.home_score !== null) :
+      matches.filter(m => m.predicted_home_score !== null);
   } else if (filterType === 'finished') {
     filteredMatches = matches.filter(m => m.status === 'finished');
   } else if (filterType.startsWith('group-')) {
@@ -585,26 +586,38 @@ function MatchesComponent(state, filterType = 'pending') {
       <div class="flex justify-between items-center mb-lg flex-wrap gap-md">
         <div class="flex items-center gap-md flex-wrap">
           <div>
-            <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Pronosticar Partidos</h2>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">Registra tus marcadores. Los partidos se bloquean en el horario de inicio.</p>
+            <h2 class="font-headline-md text-headline-md text-on-surface font-bold">
+              ${isAdmin ? 'Administrar Resultados' : 'Pronosticar Partidos'}
+            </h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">
+              ${isAdmin ? 'Registra los marcadores oficiales de los partidos.' : 'Registra tus marcadores. Los partidos se bloquean en el horario de inicio.'}
+            </p>
           </div>
-          ${isLocal ? `
+          ${isLocal && !isAdmin ? `
             <button id="btn-dev-fill-my-predictions" class="bg-[#EA4335] text-white font-label-md text-xs px-md py-sm rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-xs ml-sm md:ml-md shadow-sm border border-red-500 animate-pulse" title="Rellenar predicciones aleatorias para fase de grupos (Sólo Local/Dev)">
               <span class="material-symbols-outlined text-[16px]">bug_report</span>
               Autollenar Grupos (Dev)
             </button>
           ` : ''}
-          <button id="btn-start-tutorial" class="bg-primary/10 text-primary font-label-md text-xs px-md py-sm rounded-lg hover:bg-primary/20 active:scale-95 transition-all flex items-center gap-xs ml-sm md:ml-md border border-primary/20" title="Ver tutorial de cómo jugar">
-            <span class="material-symbols-outlined text-[16px]">help</span>
-            Cómo Jugar
-          </button>
+          ${!isAdmin ? `
+            <button id="btn-start-tutorial" class="bg-primary/10 text-primary font-label-md text-xs px-md py-sm rounded-lg hover:bg-primary/20 active:scale-95 transition-all flex items-center gap-xs ml-sm md:ml-md border border-primary/20" title="Ver tutorial de cómo jugar">
+              <span class="material-symbols-outlined text-[16px]">help</span>
+              Cómo Jugar
+            </button>
+          ` : ''}
         </div>
         
         <!-- Filter Selector tabs -->
         <div class="flex flex-wrap gap-xs bg-surface-gray border border-border-light p-1 rounded-lg">
-          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'pending' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="pending">Pendientes</button>
-          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'completed' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="completed">Pronosticados</button>
-          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'finished' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="finished">Resultados</button>
+          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'pending' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="pending">
+            ${isAdmin ? 'Sin Resultado' : 'Pendientes'}
+          </button>
+          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'completed' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="completed">
+            ${isAdmin ? 'Con Resultado' : 'Pronosticados'}
+          </button>
+          <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'finished' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="finished">
+            ${isAdmin ? 'Finalizados' : 'Resultados'}
+          </button>
           <button class="px-md py-sm rounded-lg font-label-md text-label-md transition-colors filter-tab-btn ${filterType === 'all' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}" data-filter="all">Todos</button>
         </div>
       </div>
@@ -656,78 +669,97 @@ function MatchesComponent(state, filterType = 'pending') {
               <!-- Cards Grid for this date -->
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
                 ${matchesInDate.map(m => {
-                  const isLocked = new Date(m.match_date).getTime() <= now;
+                  const isLocked = !isAdmin && new Date(m.match_date).getTime() <= now;
                   const isFinished = m.status === 'finished';
-                  const hasPrediction = m.predicted_home_score !== null;
-                  const homeScoreVal = hasPrediction ? m.predicted_home_score : '';
-                  const awayScoreVal = hasPrediction ? m.predicted_away_score : '';
+                  const hasPrediction = isAdmin ? (m.home_score !== null) : (m.predicted_home_score !== null);
+                  const homeScoreVal = isAdmin ? (m.home_score !== null ? m.home_score : '') : (m.predicted_home_score !== null ? m.predicted_home_score : '');
+                  const awayScoreVal = isAdmin ? (m.away_score !== null ? m.away_score : '') : (m.predicted_away_score !== null ? m.predicted_away_score : '');
                   const stageLabel = m.stage === 'group' ? `Grupo ${m.group_name}` : (m.stage === 'r32' ? 'Dieciseisavos' : m.stage.toUpperCase());
 
+                  const buttonLabel = isAdmin ? (hasPrediction ? 'Guardado' : 'Guardar') : (hasPrediction ? 'Guardado' : 'Predecir');
+                  const showSaveBtn = isAdmin || (!isLocked && !isFinished);
+
+                  let statusHTML = '';
+                  if (isAdmin) {
+                    statusHTML = hasPrediction ? 
+                      `<span class="font-label-md text-xs text-success-green font-bold">Resultado Oficial</span>` : 
+                      `<span class="text-xs text-coral" id="status-text-${m.id}"><span class="inline-block w-1.5 h-1.5 rounded-full bg-coral mr-1"></span>Sin Resultado</span>`;
+                  } else {
+                    statusHTML = isFinished ? `
+                      <span class="font-label-md text-xs text-success-green font-bold">
+                        Oficial: ${m.home_score}-${m.away_score}
+                      </span>
+                      <span class="text-[11px] font-bold text-primary">+${m.points_earned} pts</span>
+                    ` : (isLocked ? `
+                      <span class="text-xs text-on-surface-variant italic">Bloqueado</span>
+                    ` : `
+                      <span class="text-xs text-coral" id="status-text-${m.id}">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full ${hasPrediction ? 'bg-success-green' : 'bg-coral'} mr-1"></span>
+                        ${hasPrediction ? 'Pronosticado' : 'Pendiente'}
+                      </span>
+                    `);
+                  }
+
                   return `
-                    <div class="bg-surface-gray border ${hasPrediction ? 'border-primary/40 bg-primary/5' : 'border-border-light'} rounded-xl p-md flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer group" id="match-row-${m.id}">
-                      <!-- Top Meta -->
-                      <div class="flex justify-between items-center text-label-md text-on-surface-variant opacity-80 mb-sm">
-                        <span class="font-semibold uppercase tracking-wider">${stageLabel}</span>
-                        <span class="font-bold text-primary text-[12px] flex items-center gap-xs">
-                          <span class="material-symbols-outlined text-[14px]">schedule</span>
-                          ${formatTimeOnly(m.match_date)}
-                        </span>
-                      </div>
-
-                      <!-- Middle: Flags & Inputs directly below flags -->
-                      <div class="flex items-center justify-between my-sm">
-                        <!-- Team Home -->
-                        <div class="flex flex-col items-center flex-1">
-                          <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
-                            <img alt="${m.home_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
-                          </div>
-                          <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
-                                 type="number" min="0" max="99" placeholder="-"
-                                 data-match-id="${m.id}" data-team="home" value="${homeScoreVal}" ${isLocked ? 'disabled' : ''}/>
-                          <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
-                          <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.home_team}">${m.home_team}</span>
-                        </div>
-
-                        <!-- VS -->
-                        <span class="font-label-md text-label-md text-on-surface-variant font-bold px-sm">VS</span>
-
-                        <!-- Team Away -->
-                        <div class="flex flex-col items-center flex-1">
-                          <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
-                            <img alt="${m.away_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
-                          </div>
-                          <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
-                                 type="number" min="0" max="99" placeholder="-"
-                                 data-match-id="${m.id}" data-team="away" value="${awayScoreVal}" ${isLocked ? 'disabled' : ''}/>
-                          <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
-                          <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.away_team}">${m.away_team}</span>
+                    <div class="bg-surface-gray border ${hasPrediction ? 'border-primary/40 bg-primary/5' : 'border-border-light'} rounded-xl overflow-hidden flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer group" id="match-row-${m.id}">
+                      <!-- Stadium Image Header -->
+                      <div class="w-full h-24 overflow-hidden relative">
+                        <img alt="Estadio" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnbTCYAi3Ely4vxtUR6W1rHw9_ycDDpy199QBsGZMum5I18t2Fcla3iY2l21x9PpmP4ZrFkGlqZWUq0mRsEhv4Y_jj1flHqkymbmVxlZK8WPCai_NluxVOwuRKAWZneJm-nTLfMRCemwRVMHslt114XhMPEzGCXFAINL6i8iUfNRtLdjhDIVFHbg7gn_didIUP7vwpdGR2x4ccYBuZDKtP9ZC7_blPdc_VlDUZZZNF6ss0Q6In9LN53gc67dLx7mJXcMrv8rPEA2kp"/>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-xs left-md text-white flex justify-between w-[calc(100%-1.5rem)] items-center">
+                          <span class="font-semibold text-xs uppercase tracking-wider text-white opacity-90">${stageLabel}</span>
+                          <span class="font-bold text-[12px] flex items-center gap-xs text-white">
+                            <span class="material-symbols-outlined text-[14px]">schedule</span>
+                            ${formatTimeOnly(m.match_date)}
+                          </span>
                         </div>
                       </div>
 
-                      <!-- Bottom Action -->
-                      <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
-                        <div class="flex flex-col">
-                          ${isFinished ? `
-                            <span class="font-label-md text-xs text-success-green font-bold">
-                              Oficial: ${m.home_score}-${m.away_score}
-                            </span>
-                            <span class="text-[11px] font-bold text-primary">+${m.points_earned} pts</span>
-                          ` : (isLocked ? `
-                            <span class="text-xs text-on-surface-variant italic">Bloqueado</span>
-                          ` : `
-                            <span class="text-xs text-coral" id="status-text-${m.id}">
-                              <span class="inline-block w-1.5 h-1.5 rounded-full ${hasPrediction ? 'bg-success-green' : 'bg-coral'} mr-1"></span>
-                              ${hasPrediction ? 'Pronosticado' : 'Pendiente'}
-                            </span>
-                          `)}
+                      <!-- Card Body -->
+                      <div class="p-md flex flex-col justify-between flex-1">
+                        <!-- Middle: Flags & Inputs directly below flags -->
+                        <div class="flex items-center justify-between my-sm">
+                          <!-- Team Home -->
+                          <div class="flex flex-col items-center flex-1">
+                            <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
+                              <img alt="${m.home_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+                            </div>
+                            <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
+                                   type="number" min="0" max="99" placeholder="-"
+                                   data-match-id="${m.id}" data-team="home" value="${homeScoreVal}" ${isLocked ? 'disabled' : ''}/>
+                            <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
+                            <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.home_team}">${m.home_team}</span>
+                          </div>
+
+                          <!-- VS -->
+                          <span class="font-label-md text-label-md text-on-surface-variant font-bold px-sm">VS</span>
+
+                          <!-- Team Away -->
+                          <div class="flex flex-col items-center flex-1">
+                            <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
+                              <img alt="${m.away_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+                            </div>
+                            <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
+                                   type="number" min="0" max="99" placeholder="-"
+                                   data-match-id="${m.id}" data-team="away" value="${awayScoreVal}" ${isLocked ? 'disabled' : ''}/>
+                            <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
+                            <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.away_team}">${m.away_team}</span>
+                          </div>
                         </div>
-                        <div>
-                          ${!isLocked && !isFinished ? `
-                            <button class="bg-primary text-on-primary px-sm py-0.5 rounded font-label-md text-xs btn-save-prediction hover:opacity-90 transition-opacity" 
-                                    data-match-id="${m.id}" id="save-btn-${m.id}" style="${hasPrediction ? 'background-color:#6f7a70' : ''}">
-                              ${hasPrediction ? 'Guardado' : 'Predecir'}
-                            </button>
-                          ` : ''}
+
+                        <!-- Bottom Action -->
+                        <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
+                          <div class="flex flex-col">
+                            ${statusHTML}
+                          </div>
+                          <div>
+                            ${showSaveBtn ? `
+                              <button class="bg-primary text-on-primary px-sm py-0.5 rounded font-label-md text-xs btn-save-prediction hover:opacity-90 transition-opacity" 
+                                      data-match-id="${m.id}" id="save-btn-${m.id}" style="${hasPrediction ? 'background-color:#6f7a70' : ''}">
+                                ${buttonLabel}
+                              </button>
+                            ` : ''}
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -107,48 +107,46 @@ async function checkAuth() {
 // Toggle Visibility of Shell elements (Suppression on Login/Register screens)
 function updateShellUI() {
   const header = document.getElementById('main-header');
-  const sidebar = document.getElementById('main-sidebar');
   const mobileNav = document.getElementById('mobile-nav');
   const mainContainer = document.getElementById('main-container');
   const headerUsername = document.getElementById('header-username');
 
   // Admin links
   const adminTopLink = document.getElementById('nav-admin-top');
-  const adminSideLink = document.getElementById('nav-admin-side');
   const adminMobileLink = document.getElementById('nav-admin-mobile');
+
+  const isAdmin = state.user && state.user.is_admin === 1;
+
+  // Dynamic Navigation Label update
+  const predictionsTab = document.querySelector('a[href="#matches"].nav-tab');
+  if (predictionsTab) {
+    predictionsTab.textContent = isAdmin ? 'Resultados' : 'Predicciones';
+  }
+  const predictionsMobileTab = document.querySelector('a[href="#matches"] .font-label-md');
+  if (predictionsMobileTab) {
+    predictionsMobileTab.textContent = isAdmin ? 'Resultados' : 'Jugar';
+  }
 
   if (state.user) {
     // Show navigation bars
-    header.classList.remove('hidden');
-    sidebar.classList.remove('hidden');
-    sidebar.classList.add('flex'); // Keep it flex on desktop
-    mobileNav.classList.remove('hidden');
-    
-    // Add margin space on desktop to clear side navigation
-    mainContainer.classList.add('md:ml-64');
+    if (header) header.classList.remove('hidden');
+    if (mobileNav) mobileNav.classList.remove('hidden');
     
     // Set profile name
-    headerUsername.textContent = state.user.name.split(' ')[0];
+    if (headerUsername) headerUsername.textContent = state.user.name.split(' ')[0];
 
     // Check admin level
-    if (state.user.is_admin === 1) {
+    if (isAdmin) {
       adminTopLink?.classList.remove('hidden');
-      adminSideLink?.classList.remove('hidden');
       adminMobileLink?.classList.remove('hidden');
     } else {
       adminTopLink?.classList.add('hidden');
-      adminSideLink?.classList.add('hidden');
       adminMobileLink?.classList.add('hidden');
     }
   } else {
     // Hide navigation bars (Login/Register screens)
-    header.classList.add('hidden');
-    sidebar.classList.add('hidden');
-    sidebar.classList.remove('flex');
-    mobileNav.classList.add('hidden');
-    
-    // Clear margins
-    mainContainer.classList.remove('md:ml-64');
+    if (header) header.classList.add('hidden');
+    if (mobileNav) mobileNav.classList.add('hidden');
   }
 }
 
@@ -163,16 +161,7 @@ function highlightActiveLinks(hash) {
     }
   });
 
-  // 2. Desktop Side Bar Links
-  document.querySelectorAll('.sidebar-link').forEach(link => {
-    if (link.getAttribute('href') === hash) {
-      link.className = "flex items-center gap-md p-md text-primary font-bold bg-primary-container/10 rounded-lg active:scale-95 transition-transform duration-150 sidebar-link";
-    } else {
-      link.className = "flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container rounded-lg active:scale-95 transition-transform duration-150 sidebar-link";
-    }
-  });
-
-  // 3. Mobile Bottom Links
+  // 2. Mobile Bottom Links
   document.querySelectorAll('.mobile-link').forEach(link => {
     if (link.getAttribute('href') === hash) {
       link.className = "flex flex-col items-center gap-xs text-primary mobile-link";
@@ -817,7 +806,7 @@ async function triggerSave(matchId) {
   });
 
   if (homeVal === '' || awayVal === '') {
-    showToast("Completa los marcadores oficiales", "error");
+    showToast("Completa los marcadores", "error");
     return;
   }
 
@@ -825,24 +814,44 @@ async function triggerSave(matchId) {
   const awayScore = parseInt(awayVal);
 
   const saveBtn = document.getElementById(`save-btn-${matchId}`);
+  const isAdmin = state.user && state.user.is_admin === 1;
+
   if (saveBtn) {
     saveBtn.disabled = true;
     saveBtn.textContent = 'Guardando...';
   }
 
   try {
-    await API.post(`/api/matches/${matchId}/predict`, {
-      home_score: homeScore,
-      away_score: awayScore
-    });
-
-    showToast("Predicción guardada");
-    
-    // Update local state
-    const localMatch = state.matches.find(m => m.id == matchId);
-    if (localMatch) {
-      localMatch.predicted_home_score = homeScore;
-      localMatch.predicted_away_score = awayScore;
+    if (isAdmin) {
+      // Admin saves official score
+      await API.post(`/api/admin/matches/${matchId}/score`, {
+        home_score: homeScore,
+        away_score: awayScore,
+        status: 'finished'
+      });
+      showToast("Resultado oficial guardado");
+      
+      // Update local state
+      const localMatch = state.matches.find(m => m.id == matchId);
+      if (localMatch) {
+        localMatch.home_score = homeScore;
+        localMatch.away_score = awayScore;
+        localMatch.status = 'finished';
+      }
+    } else {
+      // Normal user saves prediction
+      await API.post(`/api/matches/${matchId}/predict`, {
+        home_score: homeScore,
+        away_score: awayScore
+      });
+      showToast("Predicción guardada");
+      
+      // Update local state
+      const localMatch = state.matches.find(m => m.id == matchId);
+      if (localMatch) {
+        localMatch.predicted_home_score = homeScore;
+        localMatch.predicted_away_score = awayScore;
+      }
     }
 
     // Re-render current page to update bracket propagation safely preserving focus/value
@@ -851,7 +860,7 @@ async function triggerSave(matchId) {
     showToast(err.message, 'error');
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.textContent = 'Predecir';
+      saveBtn.textContent = isAdmin ? 'Guardar' : 'Predecir';
     }
   }
 }
@@ -869,10 +878,14 @@ function triggerAutoSave(matchId) {
 
   if (homeVal !== '' && awayVal !== '') {
     const localMatch = state.matches.find(m => m.id == matchId);
-    if (localMatch && 
-        (localMatch.predicted_home_score !== parseInt(homeVal) || 
-         localMatch.predicted_away_score !== parseInt(awayVal))) {
-      triggerSave(matchId);
+    if (localMatch) {
+      const isAdmin = state.user && state.user.is_admin === 1;
+      const currentHome = isAdmin ? localMatch.home_score : localMatch.predicted_home_score;
+      const currentAway = isAdmin ? localMatch.away_score : localMatch.predicted_away_score;
+      
+      if (currentHome !== parseInt(homeVal) || currentAway !== parseInt(awayVal)) {
+        triggerSave(matchId);
+      }
     }
   }
 }
@@ -962,8 +975,7 @@ async function handleLogout() {
 const logoutBtnHeader = document.getElementById('btn-logout-header');
 if (logoutBtnHeader) logoutBtnHeader.addEventListener('click', handleLogout);
 
-const logoutBtnSidebar = document.getElementById('btn-logout-sidebar');
-if (logoutBtnSidebar) logoutBtnSidebar.addEventListener('click', handleLogout);
+// Removed sidebar logout handler
 
 // Page Event Listeners
 window.addEventListener('hashchange', router);
