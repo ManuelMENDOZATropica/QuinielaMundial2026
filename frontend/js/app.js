@@ -7,7 +7,8 @@ const state = {
   user: null,
   matches: [],
   leaderboard: [],
-  currentMatchesFilter: 'pending' // Default filter for predictions page
+  currentMatchesFilter: 'pending', // Default filter for predictions page
+  tutorialActive: false
 };
 
 // Toast Notifications Helper
@@ -463,6 +464,8 @@ function startTutorialTour(isManual = false) {
     return;
   }
 
+  state.tutorialActive = true;
+
   // Clear any existing active timeouts
   tutorialActiveTimeouts.forEach(t => clearTimeout(t));
   tutorialActiveTimeouts = [];
@@ -643,6 +646,8 @@ function startTutorialTour(isManual = false) {
     
     localStorage.setItem('quiniela_tour_completed', 'true');
     
+    state.tutorialActive = false;
+    
     // Clear simulated values and safely re-render
     homeInput.value = originalHome;
     awayInput.value = originalAway;
@@ -802,6 +807,7 @@ function startTutorialTour(isManual = false) {
 
 // Save Prediction logic
 async function triggerSave(matchId) {
+  if (state.tutorialActive) return; // Ignore during tutorial
   const inputs = document.querySelectorAll(`.prediction-input[data-match-id="${matchId}"]`);
   let homeVal, awayVal;
 
@@ -852,6 +858,7 @@ async function triggerSave(matchId) {
 
 // Auto-Save prediction checks
 function triggerAutoSave(matchId) {
+  if (state.tutorialActive) return; // Ignore during tutorial
   const inputs = document.querySelectorAll(`.prediction-input[data-match-id="${matchId}"]`);
   let homeVal = '', awayVal = '';
 
