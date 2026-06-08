@@ -68,7 +68,9 @@ db.serialize(async () => {
       points INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `);
+  `, (err) => {
+    if (err) console.error("Error creating 'users' table:", err);
+  });
 
   // Matches table
   db.run(`
@@ -85,7 +87,9 @@ db.serialize(async () => {
       is_knockout INTEGER DEFAULT 0,
       stage TEXT DEFAULT 'group' -- 'group', 'r32', 'r16', 'qf', 'sf', '3rd', 'final'
     )
-  `);
+  `, (err) => {
+    if (err) console.error("Error creating 'matches' table:", err);
+  });
 
   // Predictions table
   db.run(`
@@ -102,7 +106,9 @@ db.serialize(async () => {
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE
     )
-  `);
+  `, (err) => {
+    if (err) console.error("Error creating 'predictions' table:", err);
+  });
 
   console.log("Tables created successfully.");
 
@@ -114,7 +120,7 @@ db.serialize(async () => {
 
   db.get(`SELECT id FROM users WHERE email = ?`, [adminEmail], (err, row) => {
     if (err) {
-      console.error(err);
+      console.error("Error checking admin user:", err);
       return;
     }
     if (!row) {
@@ -151,10 +157,11 @@ db.serialize(async () => {
 
   db.get(`SELECT COUNT(*) as count FROM matches`, (err, row) => {
     if (err) {
-      console.error(err);
+      console.error("Error checking matches count:", err);
       return;
     }
-    if (row.count === 0) {
+    const count = row ? Number(row.count) : 0;
+    if (count === 0) {
       console.log("Seeding fixtures...");
       let matchNum = 1;
       const groupNames = Object.keys(groups);
