@@ -54,6 +54,7 @@ function translateSQL(sql) {
 
 let isSerializing = false;
 let serializationQueue = [];
+let isExecutingQueueTask = false;
 
 const db = {
   get(sql, params = [], callback) {
@@ -62,9 +63,11 @@ const db = {
       params = [];
     }
     
-    if (isPostgres && isSerializing) {
+    if (isPostgres && isSerializing && !isExecutingQueueTask) {
       serializationQueue.push((next) => {
+        isExecutingQueueTask = true;
         db.get(sql, params, (err, result) => {
+          isExecutingQueueTask = false;
           if (callback) callback(err, result);
           next();
         });
@@ -93,9 +96,11 @@ const db = {
       params = [];
     }
     
-    if (isPostgres && isSerializing) {
+    if (isPostgres && isSerializing && !isExecutingQueueTask) {
       serializationQueue.push((next) => {
+        isExecutingQueueTask = true;
         db.all(sql, params, (err, result) => {
+          isExecutingQueueTask = false;
           if (callback) callback(err, result);
           next();
         });
@@ -124,9 +129,11 @@ const db = {
       params = [];
     }
     
-    if (isPostgres && isSerializing) {
+    if (isPostgres && isSerializing && !isExecutingQueueTask) {
       serializationQueue.push((next) => {
+        isExecutingQueueTask = true;
         db.run(sql, params, function(err) {
+          isExecutingQueueTask = false;
           if (callback) callback.call(this, err);
           next();
         });
