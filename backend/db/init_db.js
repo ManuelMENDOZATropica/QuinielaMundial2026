@@ -126,7 +126,7 @@ db.serialize(async () => {
     if (!row) {
       db.run(`
         INSERT INTO users (name, email, password_hash, is_admin)
-        VALUES ('Trópica Admin', ?, ?, 1)
+        VALUES ('TRÓPICA Admin', ?, ?, 1)
       `, [adminEmail, hash], (err) => {
         if (err) console.error("Error creating admin:", err);
         else console.log(`Admin user created. Email: ${adminEmail}, Password: ${adminPassword}`);

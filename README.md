@@ -1,6 +1,6 @@
-# Quiniela Mundial FIFA 2026 - Trópica (Restructured Tailwind Edition)
+# Quiniela Mundial FIFA 2026 - TRÓPICA (Restructured Tailwind Edition)
 
-Aplicación web full-stack de uso interno para el equipo de **Trópica** para realizar la quiniela de la Copa Mundial de la FIFA 2026. 
+Aplicación web full-stack de uso interno para el equipo de **TRÓPICA** para realizar la quiniela de la Copa Mundial de la FIFA 2026. 
 
 Esta versión ha sido reestructurada en carpetas independientes para el `backend/` y `frontend/`, e implementa el nuevo sistema de diseño corporativo en tema claro basado en Tailwind CSS, tipografías Montserrat/Work Sans e iconos de Google Material Symbols.
 

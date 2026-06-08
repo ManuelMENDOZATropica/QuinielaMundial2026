@@ -1,7 +1,7 @@
 {
   "name": "quiniela-mundial-2026",
   "version": "1.0.0",
-  "description": "Quiniela del Mundial 2026 para el equipo de Trópica",
+  "description": "Quiniela del Mundial 2026 para el equipo de TRÓPICA",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

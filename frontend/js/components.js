@@ -261,10 +261,10 @@ function LoginRegisterComponent(isRegister = false) {
           <div class="flex flex-col gap-md">
             <div class="space-y-xs">
               <h1 class="font-headline-lg text-headline-lg text-primary font-bold">
-                Tropica Quiniela 2026
+                TRÓPICA Quiniela 2026
               </h1>
               <p class="font-body-lg text-body-lg text-on-surface-variant">
-                Portal de Colaboradores Trópica
+                Portal de Colaboradores TRÓPICA
               </p>
             </div>
           </div>
@@ -408,7 +408,7 @@ function DashboardComponent(state) {
             <span class="font-display-lg text-display-lg text-on-surface font-bold">#${userRank}</span>
             <span class="font-headline-sm text-headline-sm text-on-surface-variant">/ ${leaderboard.length}</span>
           </div>
-          <p class="font-body-sm text-body-sm text-on-surface-variant mt-sm">En 'Tropica League'</p>
+          <p class="font-body-sm text-body-sm text-on-surface-variant mt-sm">En 'TRÓPICA League'</p>
           <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
             <span class="material-symbols-outlined text-9xl text-primary">emoji_events</span>
           </div>
@@ -753,7 +753,7 @@ function LeaderboardComponent(state) {
     <div class="bg-white border border-border-light rounded-xl p-lg card-shadow">
       <div>
         <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Tabla de Clasificación</h2>
-        <p class="font-body-sm text-body-sm text-on-surface-variant">Competencia oficial interna del equipo de Trópica. Los empates se resuelven por aciertos exactos.</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Competencia oficial interna del equipo de TRÓPICA. Los empates se resuelven por aciertos exactos.</p>
       </div>
 
       <div class="overflow-x-auto mt-xl">
@@ -877,7 +877,7 @@ function AdminComponent(state) {
             <h3 class="font-label-lg text-label-lg text-primary font-bold">¿Cómo probar?</h3>
             <ol class="list-decimal pl-md font-body-sm text-body-sm text-on-surface-variant mt-sm space-y-sm">
               <li>Haz clic en "Poblar Base de Datos"</li>
-              <li>Abre el panel de la izquierda y simula resultados de algún partido.</li>
+              <li>Simula resultados de algún partido en el panel de la izquierda de esta interfaz.</li>
               <li>Revisa la pestaña "Leaderboards" para ver los puntos.</li>
             </ol>
           </div>
@@ -886,7 +886,7 @@ function AdminComponent(state) {
       ` : `
       <div class="col-span-12 md:col-span-4 bg-white border border-border-light rounded-xl p-lg card-shadow">
         <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-md">Información de Producción</h2>
-        <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">Te encuentras en la interfaz de administración en vivo del portal corporativo de Trópica.</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">Te encuentras en la interfaz de administración en vivo del portal corporativo de TRÓPICA.</p>
         <div class="bg-primary/5 border border-primary/20 p-md rounded-lg space-y-sm">
           <h3 class="font-label-lg text-label-lg text-primary font-bold">Cálculo en Tiempo Real</h3>
           <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
