@@ -190,6 +190,137 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
+// Google OAuth Initialization
+app.get('/api/auth/google', (req, res) => {
+  const client_id = process.env.GOOGLE_CLIENT_ID;
+  const redirect_uri = process.env.GOOGLE_CALLBACK_URL;
+  const scope = 'openid email profile';
+  
+  if (!client_id || !redirect_uri) {
+    return res.status(500).send("Google OAuth no está configurado en el servidor (faltan variables de entorno: GOOGLE_CLIENT_ID o GOOGLE_CALLBACK_URL)");
+  }
+  
+  const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+    `client_id=${encodeURIComponent(client_id)}` + 
+    `&redirect_uri=${encodeURIComponent(redirect_uri)}` + 
+    `&response_type=code` + 
+    `&scope=${encodeURIComponent(scope)}`;
+    
+  res.redirect(googleUrl);
+});
+
+// Google OAuth Callback Handler
+app.get('/api/auth/google/callback', async (req, res) => {
+  const { code } = req.query;
+  if (!code) {
+    return res.status(400).send("Falta el código de autorización de Google");
+  }
+  
+  const client_id = process.env.GOOGLE_CLIENT_ID;
+  const client_secret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirect_uri = process.env.GOOGLE_CALLBACK_URL;
+  
+  try {
+    // Exchange Google Auth code for Access Token
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id,
+        client_secret,
+        redirect_uri,
+        grant_type: 'authorization_code'
+      })
+    });
+    
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok) {
+      console.error("Error exchanging token:", tokenData);
+      return res.status(500).send("Error al obtener el token de Google: " + (tokenData.error_description || tokenData.error));
+    }
+    
+    const { access_token } = tokenData;
+    
+    // Fetch user profile info using access token
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+    
+    const userData = await userResponse.json();
+    if (!userResponse.ok) {
+      console.error("Error getting user info:", userData);
+      return res.status(500).send("Error al obtener información de usuario de Google");
+    }
+    
+    const { email, name } = userData;
+    if (!email) {
+      return res.status(400).send("No se pudo obtener el correo de Google");
+    }
+    
+    // Check if user exists or register them
+    db.get(`SELECT * FROM users WHERE email = ?`, [email.toLowerCase().trim()], (err, user) => {
+      if (err) {
+        console.error("Database error looking up user:", err);
+        return res.status(500).send("Error interno al buscar el usuario");
+      }
+      
+      const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));
+      
+      if (user) {
+        // Log in user
+        const token = jwt.sign(
+          { id: user.id, name: user.name, email: user.email, is_admin: user.is_admin },
+          JWT_SECRET,
+          { expiresIn: '7d' }
+        );
+        
+        res.cookie('token', token, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+        
+        return res.redirect('/#matches');
+      } else {
+        // Register new user with a random hash (since they authenticate via Google)
+        const randomPassword = bcrypt.hashSync(Math.random().toString(36), 10);
+        
+        db.run(`
+          INSERT INTO users (name, email, password_hash)
+          VALUES (?, ?, ?)
+        `, [name, email.toLowerCase().trim(), randomPassword], function(err) {
+          if (err) {
+            console.error("Error creating user via Google:", err);
+            return res.status(500).send("Error al registrar el usuario nuevo");
+          }
+          
+          const newUserId = this.lastID;
+          const token = jwt.sign(
+            { id: newUserId, name: name, email: email.toLowerCase().trim(), is_admin: 0 },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+          );
+          
+          res.cookie('token', token, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+          });
+          
+          return res.redirect('/#matches');
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error in Google OAuth Callback:", error);
+    res.status(500).send("Error interno del servidor durante el inicio de sesión");
+  }
+});
+
 // Logout User
 app.post('/api/auth/logout', (req, res) => {
   const isProduction = process.env.NODE_ENV === 'production' || (!req.hostname.includes('localhost') && !req.hostname.includes('127.0.0.1'));

@@ -268,47 +268,20 @@ async function router() {
 
 // BIND EVENTS FOR LOGIN/REGISTER
 function bindAuthPageEvents(isRegister) {
-  // Google Login click event (Simulated login using OAuth trigger for Carlos R.)
+  // Google Login click event (Real Google OAuth redirect)
   const googleBtn = document.getElementById('btn-google-oauth');
   if (googleBtn) {
-    googleBtn.addEventListener('click', async () => {
+    googleBtn.addEventListener('click', () => {
       googleBtn.classList.add('opacity-80', 'pointer-events-none');
       googleBtn.innerHTML = `
         <svg class="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <span class="font-label-lg text-label-lg">Verificando...</span>
+        <span class="font-label-lg text-label-lg">Redirigiendo a Google...</span>
       `;
-
-      try {
-        // Log in as Carlos R. (Registers/Logs in via OAuth mock)
-        // First try to register Carlos R, then login
-        try {
-          await API.post('/api/auth/register', {
-            name: "Carlos Rodriguez",
-            email: "carlos@tropica.me",
-            password: "carlosquiniela"
-          });
-        } catch (e) {
-          // If already registered, ignore and proceed to login
-        }
-        
-        const data = await API.post('/api/auth/login', {
-          email: "carlos@tropica.me",
-          password: "carlosquiniela"
-        });
-        state.user = data.user;
-        
-        showToast("Sesión iniciada con Google (carlos@tropica.me)");
-        window.location.hash = '#matches';
-      } catch (err) {
-        showToast("Error en simulación OAuth: " + err.message, 'error');
-        googleBtn.innerHTML = `
-          <span class="font-label-lg text-label-lg text-on-surface">Iniciar sesión con Google (Demo)</span>
-        `;
-        googleBtn.classList.remove('opacity-80', 'pointer-events-none');
-      }
+      // Redirect to backend Google OAuth route
+      window.location.href = `${API_BASE}/api/auth/google`;
     });
   }
 
