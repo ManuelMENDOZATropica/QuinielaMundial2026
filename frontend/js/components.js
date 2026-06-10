@@ -621,15 +621,33 @@ function MatchesComponent(state, filterType = 'pending') {
               <!-- Cards Grid for this date -->
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
                 ${matchesInDate.map(m => {
-                  const isLocked = new Date(m.match_date).getTime() <= now;
+                  const isLocked = new Date(m.match_date).getTime() <= now || m.status !== 'scheduled';
                   const isFinished = m.status === 'finished';
                   const hasPrediction = m.predicted_home_score !== null;
                   const homeScoreVal = hasPrediction ? m.predicted_home_score : '';
                   const awayScoreVal = hasPrediction ? m.predicted_away_score : '';
                   const stageLabel = m.stage === 'group' ? `Grupo ${m.group_name}` : (m.stage === 'r32' ? 'Dieciseisavos' : m.stage.toUpperCase());
 
+                  // Premium dynamic card border classes
+                  let cardBorderClass = 'border-border-light';
+                  if (hasPrediction) {
+                    cardBorderClass = 'border-primary/40 bg-primary/5';
+                  } else if (isLocked) {
+                    cardBorderClass = 'border-red-200/60 bg-red-50/10 dark:bg-red-950/5';
+                  }
+
+                  // Dynamic inputs styling
+                  let inputClass = 'w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input';
+                  if (isLocked) {
+                    if (hasPrediction) {
+                      inputClass = 'w-12 text-center border border-border-light bg-surface-container/50 text-on-surface-variant/70 rounded-lg p-0.5 font-headline-sm text-headline-sm mt-sm prediction-input cursor-not-allowed';
+                    } else {
+                      inputClass = 'w-12 text-center border border-red-200 bg-red-50/35 text-red-400/80 rounded-lg p-0.5 font-headline-sm text-headline-sm mt-sm prediction-input cursor-not-allowed';
+                    }
+                  }
+
                   return `
-                    <div class="bg-surface-gray border ${hasPrediction ? 'border-primary/40 bg-primary/5' : 'border-border-light'} rounded-xl overflow-hidden flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer group" id="match-row-${m.id}">
+                    <div class="bg-surface-gray border ${cardBorderClass} rounded-xl overflow-hidden flex flex-col justify-between hover:border-primary transition-all duration-200 card-shadow cursor-pointer group" id="match-row-${m.id}">
                       <!-- Stadium Image Header -->
                       <div class="w-full h-24 overflow-hidden relative">
                         <img alt="Estadio" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnbTCYAi3Ely4vxtUR6W1rHw9_ycDDpy199QBsGZMum5I18t2Fcla3iY2l21x9PpmP4ZrFkGlqZWUq0mRsEhv4Y_jj1flHqkymbmVxlZK8WPCai_NluxVOwuRKAWZneJm-nTLfMRCemwRVMHslt114XhMPEzGCXFAINL6i8iUfNRtLdjhDIVFHbg7gn_didIUP7vwpdGR2x4ccYBuZDKtP9ZC7_blPdc_VlDUZZZNF6ss0Q6In9LN53gc67dLx7mJXcMrv8rPEA2kp"/>
@@ -652,7 +670,7 @@ function MatchesComponent(state, filterType = 'pending') {
                             <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
                               <img alt="${m.home_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
                             </div>
-                            <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
+                            <input class="${inputClass}" 
                                    type="number" min="0" max="99" placeholder="-"
                                    data-match-id="${m.id}" data-team="home" value="${homeScoreVal}" ${isLocked ? 'disabled' : ''}/>
                             <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.home_team}">${getTeamCode(m.home_team)}</span>
@@ -667,7 +685,7 @@ function MatchesComponent(state, filterType = 'pending') {
                             <div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-white flex items-center justify-center">
                               <img alt="${m.away_team}" class="w-full h-full object-cover" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
                             </div>
-                            <input class="w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input" 
+                            <input class="${inputClass}" 
                                    type="number" min="0" max="99" placeholder="-"
                                    data-match-id="${m.id}" data-team="away" value="${awayScoreVal}" ${isLocked ? 'disabled' : ''}/>
                             <span class="font-label-md text-label-md mt-xs text-on-surface font-semibold truncate max-w-[80px]" title="${m.away_team}">${getTeamCode(m.away_team)}</span>
@@ -682,9 +700,16 @@ function MatchesComponent(state, filterType = 'pending') {
                               <span class="font-label-md text-xs text-success-green font-bold">
                                 Oficial: ${m.home_score}-${m.away_score}
                               </span>
-                              <span class="text-[11px] font-bold text-primary">+${m.points_earned} pts</span>
+                              <span class="text-[11px] font-bold text-primary">
+                                ${hasPrediction 
+                                  ? `+${m.points_earned} pts` 
+                                  : `<span class="text-red-500 flex items-center gap-0.5"><span class="material-symbols-outlined text-[12px]">block</span> No realizado (+0 pts)</span>`}
+                              </span>
                             ` : (isLocked ? `
-                              <span class="text-xs text-on-surface-variant italic">Bloqueado</span>
+                              <span class="text-[11px] font-bold flex items-center gap-1 ${hasPrediction ? 'text-success-green bg-success-green/10 px-1.5 py-0.5 rounded' : 'text-red-500 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded'}">
+                                <span class="material-symbols-outlined text-[14px]">${hasPrediction ? 'lock' : 'lock_open'}</span>
+                                ${hasPrediction ? 'Cerrado' : 'No realizado'}
+                              </span>
                             ` : `
                               <span class="text-xs text-coral" id="status-text-${m.id}">
                                 <span class="inline-block w-1.5 h-1.5 rounded-full ${hasPrediction ? 'bg-success-green' : 'bg-coral'} mr-1"></span>

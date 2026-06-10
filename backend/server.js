@@ -422,7 +422,7 @@ app.post('/api/matches/:id/predict', authenticateToken, (req, res) => {
     const kickoffTime = new Date(match.match_date).getTime();
     const currentTime = Date.now(); // Milliseconds since epoch
 
-    if (currentTime >= kickoffTime) {
+    if (match.status !== 'scheduled' || currentTime >= kickoffTime) {
       return res.status(400).json({ error: "Las predicciones para este partido están cerradas (el partido ya comenzó)" });
     }
 
