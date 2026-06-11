@@ -165,6 +165,7 @@ db.serialize(async () => {
       console.log("Seeding fixtures...");
       let matchNum = 1;
       const groupNames = Object.keys(groups);
+      const dayMatchCounts = {};
 
       groupNames.forEach((groupName, groupIdx) => {
         const teams = groups[groupName];
@@ -188,11 +189,26 @@ db.serialize(async () => {
           else if (roundIdx === 1) baseDay = 16 + Math.floor(groupIdx / 2);
           else baseDay = 21 + Math.floor(groupIdx / 2);
 
-          const dateStr = `2026-06-${String(baseDay).padStart(2, '0')} 18:00`;
+          const key = `${roundIdx}_${baseDay}`;
+          if (dayMatchCounts[key] === undefined) {
+            dayMatchCounts[key] = 0;
+          }
 
           round.forEach(([homeIdx, awayIdx]) => {
             const home = teams[homeIdx];
             const away = teams[awayIdx];
+            const matchIndexOnDay = dayMatchCounts[key]++;
+
+            let timeStr = "18:00";
+            if (roundIdx < 2) {
+              // Standard slots for Round 1 & 2: 13:00, 15:00, 18:00, 20:00
+              const slots = ["13:00", "15:00", "18:00", "20:00"];
+              timeStr = slots[matchIndexOnDay % slots.length];
+            } else {
+              // Standard slots for Round 3 (simultaneous matches per group): 16:00 and 19:00
+              timeStr = (groupIdx % 2 === 0) ? "16:00" : "19:00";
+            }
+            const dateStr = `2026-06-${String(baseDay).padStart(2, '0')} ${timeStr}`;
 
             db.run(`
               INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, stage)
@@ -287,7 +303,64 @@ db.serialize(async () => {
 
       console.log(`Successfully seeded ${matchNum - 1} matches.`);
     } else {
-      console.log("Matches already seeded.");
+      console.log("Matches already seeded. Checking if we need to update kickoff times...");
+      const dayMatchCounts = {};
+      const updates = [];
+      let matchNum = 1;
+      const groupNames = Object.keys(groups);
+
+      groupNames.forEach((groupName, groupIdx) => {
+        const teams = groups[groupName];
+        const rounds = [
+          [[0, 2], [1, 3]],
+          [[0, 1], [3, 2]],
+          [[3, 0], [1, 2]]
+        ];
+
+        rounds.forEach((round, roundIdx) => {
+          let baseDay;
+          if (roundIdx === 0) baseDay = 11 + Math.floor(groupIdx / 2);
+          else if (roundIdx === 1) baseDay = 16 + Math.floor(groupIdx / 2);
+          else baseDay = 21 + Math.floor(groupIdx / 2);
+
+          const key = `${roundIdx}_${baseDay}`;
+          if (dayMatchCounts[key] === undefined) {
+            dayMatchCounts[key] = 0;
+          }
+
+          round.forEach(([homeIdx, awayIdx]) => {
+            const matchIndexOnDay = dayMatchCounts[key]++;
+
+            let timeStr = "18:00";
+            if (roundIdx < 2) {
+              const slots = ["13:00", "15:00", "18:00", "20:00"];
+              timeStr = slots[matchIndexOnDay % slots.length];
+            } else {
+              timeStr = (groupIdx % 2 === 0) ? "16:00" : "19:00";
+            }
+            const dateStr = `2026-06-${String(baseDay).padStart(2, '0')} ${timeStr}`;
+            updates.push({ matchNum, dateStr });
+            matchNum++;
+          });
+        });
+      });
+
+      db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        const stmt = db.prepare(`UPDATE matches SET match_date = ? WHERE match_num = ?`);
+        updates.forEach(u => {
+          stmt.run([u.dateStr, u.matchNum]);
+        });
+        stmt.finalize((err) => {
+          if (err) {
+            db.run("ROLLBACK");
+            console.error("Error migrating kickoff times in database:", err);
+          } else {
+            db.run("COMMIT");
+            console.log("Successfully migrated database: Group stage match kickoff times updated to official slots.");
+          }
+        });
+      });
     }
   });
 });
