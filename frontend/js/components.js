@@ -830,12 +830,12 @@ function AdminComponent(state) {
                 <div class="flex items-center gap-sm">
                   <span class="font-semibold text-body-sm w-24 text-right truncate">${m.home_team}</span>
                   
-                  <input type="number" min="0" class="w-12 text-center border border-border-light rounded focus:ring-1 focus:ring-primary focus:border-primary p-1 admin-home-score" 
+                  <input type="number" min="0" class="w-12 text-center border border-border-light rounded focus:ring-1 focus:ring-primary focus:border-primary p-1 admin-home-score score-input" 
                          data-match-id="${m.id}" value="${homeScoreVal}">
                   
                   <span class="font-bold text-on-surface-variant">-</span>
                   
-                  <input type="number" min="0" class="w-12 text-center border border-border-light rounded focus:ring-1 focus:ring-primary focus:border-primary p-1 admin-away-score" 
+                  <input type="number" min="0" class="w-12 text-center border border-border-light rounded focus:ring-1 focus:ring-primary focus:border-primary p-1 admin-away-score score-input" 
                          data-match-id="${m.id}" value="${awayScoreVal}">
                   
                   <span class="font-semibold text-body-sm w-24 text-left truncate">${m.away_team}</span>
