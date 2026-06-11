@@ -418,8 +418,8 @@ app.post('/api/matches/:id/predict', authenticateToken, (req, res) => {
       return res.status(404).json({ error: "Partido no encontrado" });
     }
 
-    // Predictions lock at kickoff date
-    const kickoffTime = new Date(match.match_date).getTime();
+    // Predictions lock at kickoff date (CDMX time, UTC-6)
+    const kickoffTime = new Date(match.match_date.replace(' ', 'T') + '-06:00').getTime();
     const currentTime = Date.now(); // Milliseconds since epoch
 
     if (match.status !== 'scheduled' || currentTime >= kickoffTime) {

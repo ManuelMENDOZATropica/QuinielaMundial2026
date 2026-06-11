@@ -38,21 +38,25 @@ function getTeamCode(teamName) {
   if (teamName === "Cape Verde") return "CPV";
   return teamName.substring(0, 3).toUpperCase();
 }
+function parseMatchDate(dateStr) {
+  // Parse date string (assumed to be in CDMX time, UTC-6)
+  return new Date(dateStr.replace(' ', 'T') + '-06:00');
+}
 
 function formatDate(dateStr) {
   const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('es-ES', options);
+  return parseMatchDate(dateStr).toLocaleDateString('es-ES', options);
 }
 
 function formatDateHeader(dateStr) {
-  const dateObj = new Date(dateStr.replace(' ', 'T'));
+  const dateObj = parseMatchDate(dateStr);
   const options = { weekday: 'long', day: 'numeric', month: 'long' };
   const formatted = dateObj.toLocaleDateString('es-ES', options);
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
 function formatTimeOnly(dateStr) {
-  const dateObj = new Date(dateStr.replace(' ', 'T'));
+  const dateObj = parseMatchDate(dateStr);
   return dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -334,11 +338,11 @@ function DashboardComponent(state) {
   // Filter pending predictions for matches starting soon
   const now = Date.now();
   const pendingMatches = matches
-    .filter(m => m.predicted_home_score === null && new Date(m.match_date).getTime() > now)
+    .filter(m => m.predicted_home_score === null && parseMatchDate(m.match_date).getTime() > now)
     .slice(0, 3);
 
   // Time remaining to World Cup 2026 Opening Match
-  const kickoffDate = new Date("2026-06-11 18:00").getTime();
+  const kickoffDate = parseMatchDate("2026-06-11 18:00").getTime();
   const daysToKickoff = Math.max(0, Math.ceil((kickoffDate - now) / (1000 * 60 * 60 * 24)));
 
   return `
@@ -527,7 +531,7 @@ function MatchesComponent(state, filterType = 'pending') {
   // Apply filters
   let filteredMatches = [];
   if (filterType === 'pending') {
-    filteredMatches = matches.filter(m => m.predicted_home_score === null && new Date(m.match_date).getTime() > now);
+    filteredMatches = matches.filter(m => m.predicted_home_score === null && parseMatchDate(m.match_date).getTime() > now);
   } else if (filterType === 'completed') {
     filteredMatches = matches.filter(m => m.predicted_home_score !== null);
   } else if (filterType === 'finished') {
@@ -621,7 +625,7 @@ function MatchesComponent(state, filterType = 'pending') {
               <!-- Cards Grid for this date -->
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
                 ${matchesInDate.map(m => {
-                  const isLocked = new Date(m.match_date).getTime() <= now || m.status !== 'scheduled';
+                  const isLocked = parseMatchDate(m.match_date).getTime() <= now || m.status !== 'scheduled';
                   const isFinished = m.status === 'finished';
                   const hasPrediction = m.predicted_home_score !== null;
                   const homeScoreVal = hasPrediction ? m.predicted_home_score : '';
