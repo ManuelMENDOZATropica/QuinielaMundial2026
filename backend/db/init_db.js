@@ -136,24 +136,8 @@ db.serialize(async () => {
     }
   });
 
-  // Seed World Cup 2026 Matches
-  const groups = {
-    A: ["Mexico", "South Korea", "South South Africa", "Czechia"], // Adjusted name check to South Africa later
-    B: ["Canada", "Switzerland", "Qatar", "Bosnia-Herzegovina"],
-    C: ["Brazil", "Morocco", "Scotland", "Haiti"],
-    D: ["USA", "Paraguay", "Australia", "Turkiye"],
-    E: ["Germany", "Ecuador", "Ivory Coast", "Curacao"],
-    F: ["Netherlands", "Japan", "Tunisia", "Sweden"],
-    G: ["Belgium", "Iran", "Egypt", "New Zealand"],
-    H: ["Spain", "Uruguay", "Saudi Arabia", "Cape Verde"],
-    I: ["France", "Senegal", "Norway", "Iraq"],
-    J: ["Argentina", "Austria", "Algeria", "Jordan"],
-    K: ["Portugal", "Colombia", "Uzbekistan", "DR Congo"],
-    L: ["England", "Croatia", "Panama", "Ghana"]
-  };
-  
-  // Let's fix group A South Africa
-  groups.A = ["Mexico", "South Korea", "South Africa", "Czechia"];
+  // Seed World Cup 2026 Matches from official fixtures.json
+  const fixtures = require('./fixtures.json');
 
   db.get(`SELECT COUNT(*) as count FROM matches`, (err, row) => {
     if (err) {
@@ -162,205 +146,30 @@ db.serialize(async () => {
     }
     const count = row ? Number(row.count) : 0;
     if (count === 0) {
-      console.log("Seeding fixtures...");
-      let matchNum = 1;
-      const groupNames = Object.keys(groups);
-      const dayMatchCounts = {};
-
-      groupNames.forEach((groupName, groupIdx) => {
-        const teams = groups[groupName];
-        // Generate Round Robin fixtures for 4 teams
-        // Round 1: T1 vs T3, T2 vs T4
-        // Round 2: T1 vs T2, T4 vs T3
-        // Round 3: T4 vs T1, T2 vs T3
-        const rounds = [
-          [[0, 2], [1, 3]],
-          [[0, 1], [3, 2]],
-          [[3, 0], [1, 2]]
-        ];
-
-        rounds.forEach((round, roundIdx) => {
-          // Stagger match dates
-          // Round 1: June 11 + Math.floor(groupIdx / 2)
-          // Round 2: June 16 + Math.floor(groupIdx / 2)
-          // Round 3: June 21 + Math.floor(groupIdx / 2)
-          let baseDay;
-          if (roundIdx === 0) baseDay = 11 + Math.floor(groupIdx / 2);
-          else if (roundIdx === 1) baseDay = 16 + Math.floor(groupIdx / 2);
-          else baseDay = 21 + Math.floor(groupIdx / 2);
-
-          const key = `${roundIdx}_${baseDay}`;
-          if (dayMatchCounts[key] === undefined) {
-            dayMatchCounts[key] = 0;
-          }
-
-          round.forEach(([homeIdx, awayIdx]) => {
-            const home = teams[homeIdx];
-            const away = teams[awayIdx];
-            const matchIndexOnDay = dayMatchCounts[key]++;
-
-            let timeStr = "18:00";
-            if (roundIdx < 2) {
-              // Standard slots for Round 1 & 2: 13:00, 15:00, 18:00, 20:00
-              const slots = ["13:00", "15:00", "18:00", "20:00"];
-              timeStr = slots[matchIndexOnDay % slots.length];
-            } else {
-              // Standard slots for Round 3 (simultaneous matches per group): 16:00 and 19:00
-              timeStr = (groupIdx % 2 === 0) ? "16:00" : "19:00";
-            }
-            const dateStr = `2026-06-${String(baseDay).padStart(2, '0')} ${timeStr}`;
-
-            db.run(`
-              INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, stage)
-              VALUES (?, ?, ?, ?, ?, 'group')
-            `, [matchNum, groupName, home, away, dateStr], (err) => {
-              if (err) console.error(`Error seeding match ${matchNum}:`, err);
-            });
-            matchNum++;
-          });
-        });
-      });
-
-      // Insert some placeholder knockout stages
-      // Round of 32 placeholders (16 matches)
-      const knockoutDates = [
-        "2026-06-28 15:00", "2026-06-28 19:00", "2026-06-29 15:00", "2026-06-29 19:00",
-        "2026-06-30 15:00", "2026-06-30 19:00", "2026-07-01 15:00", "2026-07-01 19:00",
-        "2026-07-02 15:00", "2026-07-02 19:00", "2026-07-03 15:00", "2026-07-03 19:00",
-        "2026-07-04 15:00", "2026-07-04 19:00", "2026-07-05 15:00", "2026-07-05 19:00"
-      ];
-
-      for (let k = 0; k < 16; k++) {
-        db.run(`
-          INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
-          VALUES (?, 'Round of 32', ?, ?, ?, 1, 'r32')
-        `, [matchNum, `Ganador R32 - P${k+1}`, `Ganador R32 - Q${k+1}`, knockoutDates[k]], (err) => {
-          if (err) console.error(`Error seeding knockout match ${matchNum}:`, err);
-        });
-        matchNum++;
-      }
-
-      // Round of 16 placeholders (8 matches)
-      const r16Dates = [
-        "2026-07-07 15:00", "2026-07-07 19:00", "2026-07-08 15:00", "2026-07-08 19:00",
-        "2026-07-09 15:00", "2026-07-09 19:00", "2026-07-10 15:00", "2026-07-10 19:00"
-      ];
-      for (let k = 0; k < 8; k++) {
-        db.run(`
-          INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
-          VALUES (?, 'Round of 16', ?, ?, ?, 1, 'r16')
-        `, [matchNum, `Ganador R16 - P${k+1}`, `Ganador R16 - Q${k+1}`, r16Dates[k]], (err) => {
-          if (err) console.error(`Error seeding knockout match ${matchNum}:`, err);
-        });
-        matchNum++;
-      }
-
-      // Quarterfinals placeholders (4 matches)
-      const qfDates = [
-        "2026-07-12 15:00", "2026-07-12 19:00", "2026-07-13 15:00", "2026-07-13 19:00"
-      ];
-      for (let k = 0; k < 4; k++) {
-        db.run(`
-          INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
-          VALUES (?, 'Quarterfinals', ?, ?, ?, 1, 'qf')
-        `, [matchNum, `Ganador QF - P${k+1}`, `Ganador QF - Q${k+1}`, qfDates[k]], (err) => {
-          if (err) console.error(`Error seeding knockout match ${matchNum}:`, err);
-        });
-        matchNum++;
-      }
-
-      // Semifinals placeholders (2 matches)
-      const sfDates = [
-        "2026-07-15 19:00", "2026-07-16 19:00"
-      ];
-      for (let k = 0; k < 2; k++) {
-        db.run(`
-          INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
-          VALUES (?, 'Semifinals', ?, ?, ?, 1, 'sf')
-        `, [matchNum, `Ganador SF - P${k+1}`, `Ganador SF - Q${k+1}`, sfDates[k]], (err) => {
-          if (err) console.error(`Error seeding knockout match ${matchNum}:`, err);
-        });
-        matchNum++;
-      }
-
-      // Third Place Match
-      db.run(`
-        INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
-        VALUES (?, 'Third Place Match', 'Perdedor SF1', 'Perdedor SF2', '2026-07-18 15:00', 1, '3rd')
-      `, [matchNum], (err) => {
-        if (err) console.error(`Error seeding 3rd place match:`, err);
-      });
-      matchNum++;
-
-      // Final Match
-      db.run(`
-        INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
-        VALUES (?, 'Final', 'Ganador SF1', 'Ganador SF2', '2026-07-19 16:00', 1, 'final')
-      `, [matchNum], (err) => {
-        if (err) console.error(`Error seeding final match:`, err);
-      });
-      matchNum++;
-
-      console.log(`Successfully seeded ${matchNum - 1} matches.`);
-    } else {
-      console.log("Matches already seeded. Checking if we need to update kickoff times...");
-      const dayMatchCounts = {};
-      const updates = [];
-      let matchNum = 1;
-      const groupNames = Object.keys(groups);
-
-      groupNames.forEach((groupName, groupIdx) => {
-        const teams = groups[groupName];
-        const rounds = [
-          [[0, 2], [1, 3]],
-          [[0, 1], [3, 2]],
-          [[3, 0], [1, 2]]
-        ];
-
-        rounds.forEach((round, roundIdx) => {
-          let baseDay;
-          if (roundIdx === 0) baseDay = 11 + Math.floor(groupIdx / 2);
-          else if (roundIdx === 1) baseDay = 16 + Math.floor(groupIdx / 2);
-          else baseDay = 21 + Math.floor(groupIdx / 2);
-
-          const key = `${roundIdx}_${baseDay}`;
-          if (dayMatchCounts[key] === undefined) {
-            dayMatchCounts[key] = 0;
-          }
-
-          round.forEach(([homeIdx, awayIdx]) => {
-            const matchIndexOnDay = dayMatchCounts[key]++;
-
-            let timeStr = "18:00";
-            if (roundIdx < 2) {
-              const slots = ["13:00", "15:00", "18:00", "20:00"];
-              timeStr = slots[matchIndexOnDay % slots.length];
-            } else {
-              timeStr = (groupIdx % 2 === 0) ? "16:00" : "19:00";
-            }
-            const dateStr = `2026-06-${String(baseDay).padStart(2, '0')} ${timeStr}`;
-            updates.push({ matchNum, dateStr });
-            matchNum++;
-          });
-        });
-      });
-
+      console.log("Seeding official fixtures...");
       db.serialize(() => {
         db.run("BEGIN TRANSACTION");
-        const stmt = db.prepare(`UPDATE matches SET match_date = ? WHERE match_num = ?`);
-        updates.forEach(u => {
-          stmt.run([u.dateStr, u.matchNum]);
+        const stmt = db.prepare(`
+          INSERT INTO matches (match_num, group_name, home_team, away_team, match_date, is_knockout, stage)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        fixtures.forEach(f => {
+          stmt.run([f.match_num, f.group_name, f.home_team, f.away_team, f.match_date, f.is_knockout, f.stage]);
         });
+
         stmt.finalize((err) => {
           if (err) {
             db.run("ROLLBACK");
-            console.error("Error migrating kickoff times in database:", err);
+            console.error("Error seeding fixtures:", err);
           } else {
             db.run("COMMIT");
-            console.log("Successfully migrated database: Group stage match kickoff times updated to official slots.");
+            console.log(`Successfully seeded ${fixtures.length} matches.`);
           }
         });
       });
+    } else {
+      console.log("Matches already seeded.");
     }
   });
 });

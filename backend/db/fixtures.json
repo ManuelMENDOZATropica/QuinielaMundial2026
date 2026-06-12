@@ -1,0 +1,938 @@
+[
+  {
+    "match_num": 1,
+    "group_name": "A",
+    "home_team": "Mexico",
+    "away_team": "South Africa",
+    "match_date": "2026-06-11 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 2,
+    "group_name": "A",
+    "home_team": "South Korea",
+    "away_team": "Czechia",
+    "match_date": "2026-06-11 20:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 3,
+    "group_name": "A",
+    "home_team": "Czechia",
+    "away_team": "South Africa",
+    "match_date": "2026-06-18 10:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 4,
+    "group_name": "A",
+    "home_team": "Mexico",
+    "away_team": "South Korea",
+    "match_date": "2026-06-18 19:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 5,
+    "group_name": "A",
+    "home_team": "Czechia",
+    "away_team": "Mexico",
+    "match_date": "2026-06-24 19:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 6,
+    "group_name": "A",
+    "home_team": "South Africa",
+    "away_team": "South Korea",
+    "match_date": "2026-06-24 19:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 7,
+    "group_name": "B",
+    "home_team": "Canada",
+    "away_team": "Bosnia-Herzegovina",
+    "match_date": "2026-06-12 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 8,
+    "group_name": "B",
+    "home_team": "Qatar",
+    "away_team": "Switzerland",
+    "match_date": "2026-06-13 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 9,
+    "group_name": "B",
+    "home_team": "Switzerland",
+    "away_team": "Bosnia-Herzegovina",
+    "match_date": "2026-06-18 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 10,
+    "group_name": "B",
+    "home_team": "Canada",
+    "away_team": "Qatar",
+    "match_date": "2026-06-18 16:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 11,
+    "group_name": "B",
+    "home_team": "Switzerland",
+    "away_team": "Canada",
+    "match_date": "2026-06-24 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 12,
+    "group_name": "B",
+    "home_team": "Bosnia-Herzegovina",
+    "away_team": "Qatar",
+    "match_date": "2026-06-24 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 13,
+    "group_name": "C",
+    "home_team": "Brazil",
+    "away_team": "Morocco",
+    "match_date": "2026-06-13 16:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 14,
+    "group_name": "C",
+    "home_team": "Haiti",
+    "away_team": "Scotland",
+    "match_date": "2026-06-13 19:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 15,
+    "group_name": "C",
+    "home_team": "Scotland",
+    "away_team": "Morocco",
+    "match_date": "2026-06-19 16:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 16,
+    "group_name": "C",
+    "home_team": "Brazil",
+    "away_team": "Haiti",
+    "match_date": "2026-06-19 18:30",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 17,
+    "group_name": "C",
+    "home_team": "Scotland",
+    "away_team": "Brazil",
+    "match_date": "2026-06-24 16:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 18,
+    "group_name": "C",
+    "home_team": "Morocco",
+    "away_team": "Haiti",
+    "match_date": "2026-06-24 16:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 19,
+    "group_name": "D",
+    "home_team": "USA",
+    "away_team": "Paraguay",
+    "match_date": "2026-06-12 19:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 20,
+    "group_name": "D",
+    "home_team": "Australia",
+    "away_team": "Turkiye",
+    "match_date": "2026-06-13 22:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 21,
+    "group_name": "D",
+    "home_team": "USA",
+    "away_team": "Australia",
+    "match_date": "2026-06-19 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 22,
+    "group_name": "D",
+    "home_team": "Turkiye",
+    "away_team": "Paraguay",
+    "match_date": "2026-06-19 21:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 23,
+    "group_name": "D",
+    "home_team": "Turkiye",
+    "away_team": "USA",
+    "match_date": "2026-06-25 20:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 24,
+    "group_name": "D",
+    "home_team": "Paraguay",
+    "away_team": "Australia",
+    "match_date": "2026-06-25 20:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 25,
+    "group_name": "E",
+    "home_team": "Germany",
+    "away_team": "Curacao",
+    "match_date": "2026-06-14 11:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 26,
+    "group_name": "E",
+    "home_team": "Ivory Coast",
+    "away_team": "Ecuador",
+    "match_date": "2026-06-14 17:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 27,
+    "group_name": "E",
+    "home_team": "Germany",
+    "away_team": "Ivory Coast",
+    "match_date": "2026-06-20 14:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 28,
+    "group_name": "E",
+    "home_team": "Ecuador",
+    "away_team": "Curacao",
+    "match_date": "2026-06-20 18:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 29,
+    "group_name": "E",
+    "home_team": "Curacao",
+    "away_team": "Ivory Coast",
+    "match_date": "2026-06-25 14:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 30,
+    "group_name": "E",
+    "home_team": "Ecuador",
+    "away_team": "Germany",
+    "match_date": "2026-06-25 14:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 31,
+    "group_name": "F",
+    "home_team": "Netherlands",
+    "away_team": "Japan",
+    "match_date": "2026-06-14 14:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 32,
+    "group_name": "F",
+    "home_team": "Sweden",
+    "away_team": "Tunisia",
+    "match_date": "2026-06-14 20:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 33,
+    "group_name": "F",
+    "home_team": "Netherlands",
+    "away_team": "Sweden",
+    "match_date": "2026-06-20 11:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 34,
+    "group_name": "F",
+    "home_team": "Tunisia",
+    "away_team": "Japan",
+    "match_date": "2026-06-20 22:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 35,
+    "group_name": "F",
+    "home_team": "Japan",
+    "away_team": "Sweden",
+    "match_date": "2026-06-25 17:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 36,
+    "group_name": "F",
+    "home_team": "Tunisia",
+    "away_team": "Netherlands",
+    "match_date": "2026-06-25 17:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 37,
+    "group_name": "G",
+    "home_team": "Belgium",
+    "away_team": "Egypt",
+    "match_date": "2026-06-15 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 38,
+    "group_name": "G",
+    "home_team": "Iran",
+    "away_team": "New Zealand",
+    "match_date": "2026-06-15 19:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 39,
+    "group_name": "G",
+    "home_team": "Belgium",
+    "away_team": "Iran",
+    "match_date": "2026-06-21 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 40,
+    "group_name": "G",
+    "home_team": "New Zealand",
+    "away_team": "Egypt",
+    "match_date": "2026-06-21 19:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 41,
+    "group_name": "G",
+    "home_team": "Egypt",
+    "away_team": "Iran",
+    "match_date": "2026-06-26 21:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 42,
+    "group_name": "G",
+    "home_team": "New Zealand",
+    "away_team": "Belgium",
+    "match_date": "2026-06-26 21:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 43,
+    "group_name": "H",
+    "home_team": "Spain",
+    "away_team": "Cape Verde",
+    "match_date": "2026-06-15 10:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 44,
+    "group_name": "H",
+    "home_team": "Saudi Arabia",
+    "away_team": "Uruguay",
+    "match_date": "2026-06-15 16:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 45,
+    "group_name": "H",
+    "home_team": "Spain",
+    "away_team": "Saudi Arabia",
+    "match_date": "2026-06-21 10:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 46,
+    "group_name": "H",
+    "home_team": "Uruguay",
+    "away_team": "Cape Verde",
+    "match_date": "2026-06-21 16:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 47,
+    "group_name": "H",
+    "home_team": "Cape Verde",
+    "away_team": "Saudi Arabia",
+    "match_date": "2026-06-26 18:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 48,
+    "group_name": "H",
+    "home_team": "Uruguay",
+    "away_team": "Spain",
+    "match_date": "2026-06-26 18:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 49,
+    "group_name": "I",
+    "home_team": "France",
+    "away_team": "Senegal",
+    "match_date": "2026-06-16 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 50,
+    "group_name": "I",
+    "home_team": "Iraq",
+    "away_team": "Norway",
+    "match_date": "2026-06-16 16:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 51,
+    "group_name": "I",
+    "home_team": "France",
+    "away_team": "Iraq",
+    "match_date": "2026-06-22 15:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 52,
+    "group_name": "I",
+    "home_team": "Norway",
+    "away_team": "Senegal",
+    "match_date": "2026-06-22 18:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 53,
+    "group_name": "I",
+    "home_team": "Norway",
+    "away_team": "France",
+    "match_date": "2026-06-26 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 54,
+    "group_name": "I",
+    "home_team": "Senegal",
+    "away_team": "Iraq",
+    "match_date": "2026-06-26 13:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 55,
+    "group_name": "J",
+    "home_team": "Argentina",
+    "away_team": "Algeria",
+    "match_date": "2026-06-16 19:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 56,
+    "group_name": "J",
+    "home_team": "Austria",
+    "away_team": "Jordan",
+    "match_date": "2026-06-16 22:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 57,
+    "group_name": "J",
+    "home_team": "Argentina",
+    "away_team": "Austria",
+    "match_date": "2026-06-22 11:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 58,
+    "group_name": "J",
+    "home_team": "Jordan",
+    "away_team": "Algeria",
+    "match_date": "2026-06-22 21:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 59,
+    "group_name": "J",
+    "home_team": "Algeria",
+    "away_team": "Austria",
+    "match_date": "2026-06-27 20:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 60,
+    "group_name": "J",
+    "home_team": "Jordan",
+    "away_team": "Argentina",
+    "match_date": "2026-06-27 20:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 61,
+    "group_name": "K",
+    "home_team": "Portugal",
+    "away_team": "DR Congo",
+    "match_date": "2026-06-17 11:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 62,
+    "group_name": "K",
+    "home_team": "Uzbekistan",
+    "away_team": "Colombia",
+    "match_date": "2026-06-17 20:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 63,
+    "group_name": "K",
+    "home_team": "Portugal",
+    "away_team": "Uzbekistan",
+    "match_date": "2026-06-23 11:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 64,
+    "group_name": "K",
+    "home_team": "Colombia",
+    "away_team": "DR Congo",
+    "match_date": "2026-06-23 20:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 65,
+    "group_name": "K",
+    "home_team": "Colombia",
+    "away_team": "Portugal",
+    "match_date": "2026-06-27 17:30",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 66,
+    "group_name": "K",
+    "home_team": "DR Congo",
+    "away_team": "Uzbekistan",
+    "match_date": "2026-06-27 17:30",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 67,
+    "group_name": "L",
+    "home_team": "England",
+    "away_team": "Croatia",
+    "match_date": "2026-06-17 14:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 68,
+    "group_name": "L",
+    "home_team": "Ghana",
+    "away_team": "Panama",
+    "match_date": "2026-06-17 17:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 69,
+    "group_name": "L",
+    "home_team": "England",
+    "away_team": "Ghana",
+    "match_date": "2026-06-23 14:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 70,
+    "group_name": "L",
+    "home_team": "Panama",
+    "away_team": "Croatia",
+    "match_date": "2026-06-23 17:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 71,
+    "group_name": "L",
+    "home_team": "Panama",
+    "away_team": "England",
+    "match_date": "2026-06-27 15:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 72,
+    "group_name": "L",
+    "home_team": "Croatia",
+    "away_team": "Ghana",
+    "match_date": "2026-06-27 15:00",
+    "is_knockout": 0,
+    "stage": "group"
+  },
+  {
+    "match_num": 73,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P1",
+    "away_team": "Ganador R32 - Q1",
+    "match_date": "2026-06-28 13:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 74,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P2",
+    "away_team": "Ganador R32 - Q2",
+    "match_date": "2026-06-29 14:30",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 75,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P3",
+    "away_team": "Ganador R32 - Q3",
+    "match_date": "2026-06-29 19:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 76,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P4",
+    "away_team": "Ganador R32 - Q4",
+    "match_date": "2026-06-29 11:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 77,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P5",
+    "away_team": "Ganador R32 - Q5",
+    "match_date": "2026-06-30 15:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 78,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P6",
+    "away_team": "Ganador R32 - Q6",
+    "match_date": "2026-06-30 11:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 79,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P7",
+    "away_team": "Ganador R32 - Q7",
+    "match_date": "2026-06-30 19:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 80,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P8",
+    "away_team": "Ganador R32 - Q8",
+    "match_date": "2026-07-01 10:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 81,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P9",
+    "away_team": "Ganador R32 - Q9",
+    "match_date": "2026-07-01 18:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 82,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P10",
+    "away_team": "Ganador R32 - Q10",
+    "match_date": "2026-07-01 14:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 83,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P11",
+    "away_team": "Ganador R32 - Q11",
+    "match_date": "2026-07-02 17:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 84,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P12",
+    "away_team": "Ganador R32 - Q12",
+    "match_date": "2026-07-02 13:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 85,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P13",
+    "away_team": "Ganador R32 - Q13",
+    "match_date": "2026-07-02 21:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 86,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P14",
+    "away_team": "Ganador R32 - Q14",
+    "match_date": "2026-07-03 16:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 87,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P15",
+    "away_team": "Ganador R32 - Q15",
+    "match_date": "2026-07-03 19:30",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 88,
+    "group_name": "Round of 32",
+    "home_team": "Ganador R32 - P16",
+    "away_team": "Ganador R32 - Q16",
+    "match_date": "2026-07-03 12:00",
+    "is_knockout": 1,
+    "stage": "r32"
+  },
+  {
+    "match_num": 89,
+    "group_name": "Round of 16",
+    "home_team": "Ganador R16 - P1",
+    "away_team": "Ganador R16 - Q1",
+    "match_date": "2026-07-04 15:00",
+    "is_knockout": 1,
+    "stage": "r16"
+  },
+  {
+    "match_num": 90,
+    "group_name": "Round of 16",
+    "home_team": "Ganador R16 - P2",
+    "away_team": "Ganador R16 - Q2",
+    "match_date": "2026-07-04 11:00",
+    "is_knockout": 1,
+    "stage": "r16"
+  },
+  {
+    "match_num": 91,
+    "group_name": "Round of 16",
+    "home_team": "Ganador R16 - P3",
+    "away_team": "Ganador R16 - Q3",
+    "match_date": "2026-07-05 14:00",
+    "is_knockout": 1,
+    "stage": "r16"
+  },
+  {
+    "match_num": 92,
+    "group_name": "Round of 16",
+    "home_team": "Ganador R16 - P4",
+    "away_team": "Ganador R16 - Q4",
+    "match_date": "2026-07-05 18:00",
+    "is_knockout": 1,
+    "stage": "r16"
+  },
+  {
+    "match_num": 93,
+    "group_name": "Round of 16",
+    "home_team": "Ganador R16 - P5",
+    "away_team": "Ganador R16 - Q5",
+    "match_date": "2026-07-06 13:00",
+    "is_knockout": 1,
+    "stage": "r16"
+  },
+  {
+    "match_num": 94,
+    "group_name": "Round of 16",
+    "home_team": "Ganador R16 - P6",
+    "away_team": "Ganador R16 - Q6",
+    "match_date": "2026-07-06 18:00",
+    "is_knockout": 1,
+    "stage": "r16"
+  },
+  {
+    "match_num": 95,
+    "group_name": "Round of 16",
+    "home_team": "Ganador R16 - P7",
+    "away_team": "Ganador R16 - Q7",
+    "match_date": "2026-07-07 10:00",
+    "is_knockout": 1,
+    "stage": "r16"
+  },
+  {
+    "match_num": 96,
+    "group_name": "Round of 16",
+    "home_team": "Ganador R16 - P8",
+    "away_team": "Ganador R16 - Q8",
+    "match_date": "2026-07-07 14:00",
+    "is_knockout": 1,
+    "stage": "r16"
+  },
+  {
+    "match_num": 97,
+    "group_name": "Quarterfinals",
+    "home_team": "Ganador QF - P1",
+    "away_team": "Ganador QF - Q1",
+    "match_date": "2026-07-09 14:00",
+    "is_knockout": 1,
+    "stage": "qf"
+  },
+  {
+    "match_num": 98,
+    "group_name": "Quarterfinals",
+    "home_team": "Ganador QF - P2",
+    "away_team": "Ganador QF - Q2",
+    "match_date": "2026-07-10 13:00",
+    "is_knockout": 1,
+    "stage": "qf"
+  },
+  {
+    "match_num": 99,
+    "group_name": "Quarterfinals",
+    "home_team": "Ganador QF - P3",
+    "away_team": "Ganador QF - Q3",
+    "match_date": "2026-07-11 15:00",
+    "is_knockout": 1,
+    "stage": "qf"
+  },
+  {
+    "match_num": 100,
+    "group_name": "Quarterfinals",
+    "home_team": "Ganador QF - P4",
+    "away_team": "Ganador QF - Q4",
+    "match_date": "2026-07-11 19:00",
+    "is_knockout": 1,
+    "stage": "qf"
+  },
+  {
+    "match_num": 101,
+    "group_name": "Semifinals",
+    "home_team": "Ganador SF - P1",
+    "away_team": "Ganador SF - Q1",
+    "match_date": "2026-07-14 13:00",
+    "is_knockout": 1,
+    "stage": "sf"
+  },
+  {
+    "match_num": 102,
+    "group_name": "Semifinals",
+    "home_team": "Ganador SF - P2",
+    "away_team": "Ganador SF - Q2",
+    "match_date": "2026-07-15 13:00",
+    "is_knockout": 1,
+    "stage": "sf"
+  },
+  {
+    "match_num": 103,
+    "group_name": "Third Place Match",
+    "home_team": "Perdedor SF1",
+    "away_team": "Perdedor SF2",
+    "match_date": "2026-07-18 15:00",
+    "is_knockout": 1,
+    "stage": "3rd"
+  },
+  {
+    "match_num": 104,
+    "group_name": "Final",
+    "home_team": "Ganador SF1",
+    "away_team": "Ganador SF2",
+    "match_date": "2026-07-19 13:00",
+    "is_knockout": 1,
+    "stage": "final"
+  }
+]
