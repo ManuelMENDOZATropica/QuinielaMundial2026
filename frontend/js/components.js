@@ -91,14 +91,18 @@ function resolveMatchesTeams(matches) {
     }));
   }
 
-  function getTeamRef(group, name) {
-    return standings[group] ? standings[group].find(t => t.name === name) : null;
+  function getTeamRef(name) {
+    for (const group in standings) {
+      const t = standings[group].find(x => x.name === name);
+      if (t) return t;
+    }
+    return null;
   }
 
   matches.forEach(m => {
     if (m.stage === 'group') {
-      const homeRef = getTeamRef(m.group_name, m.home_team);
-      const awayRef = getTeamRef(m.group_name, m.away_team);
+      const homeRef = getTeamRef(m.home_team);
+      const awayRef = getTeamRef(m.away_team);
       if (!homeRef || !awayRef) return;
 
       const hasPred = m.predicted_home_score !== null && m.predicted_away_score !== null;
@@ -546,7 +550,12 @@ function MatchesComponent(state, filterType = 'pending') {
     filteredMatches = matches.filter(m => m.status === 'finished');
   } else if (filterType.startsWith('group-')) {
     const groupName = filterType.replace('group-', '');
-    filteredMatches = matches.filter(m => m.group_name === groupName && m.stage === 'group');
+    filteredMatches = matches.filter(m => {
+      if (m.stage !== 'group') return false;
+      const t1Group = Object.keys(groupTeams).find(g => groupTeams[g].includes(m.home_team));
+      const t2Group = Object.keys(groupTeams).find(g => groupTeams[g].includes(m.away_team));
+      return t1Group === groupName || t2Group === groupName;
+    });
   } else if (filterType === 'r32') {
     filteredMatches = matches.filter(m => m.stage === 'r32');
   } else {
