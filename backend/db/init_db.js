@@ -169,7 +169,9 @@ db.serialize(async () => {
         });
       });
     } else {
-      console.log("Matches already seeded.");
+      console.log("Matches already seeded. Syncing with official fixtures.json...");
+      const syncFixtures = require('./sync_fixtures');
+      syncFixtures().catch(err => console.error("Error syncing fixtures:", err));
     }
   });
 });
