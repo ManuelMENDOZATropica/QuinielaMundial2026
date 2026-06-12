@@ -600,7 +600,12 @@ function MatchesComponent(state, filterType = 'pending') {
         // Group matches by date key (YYYY-MM-DD)
         const groups = {};
         filteredMatches.forEach(m => {
-          const dateKey = m.match_date.split(' ')[0];
+          const localDate = parseMatchDate(m.match_date);
+          const year = localDate.getFullYear();
+          const month = String(localDate.getMonth() + 1).padStart(2, '0');
+          const day = String(localDate.getDate()).padStart(2, '0');
+          const dateKey = `${year}-${month}-${day}`;
+          
           if (!groups[dateKey]) {
             groups[dateKey] = [];
           }
