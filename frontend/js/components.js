@@ -36,6 +36,14 @@ function getTeamCode(teamName) {
   if (teamName === "Netherlands") return "NED";
   if (teamName === "New Zealand") return "NZL";
   if (teamName === "Cape Verde") return "CPV";
+  if (teamName === "DR Congo") return "COD";
+  if (teamName === "Austria") return "AUT";
+  if (teamName === "Iraq") return "IRQ";
+  if (teamName === "Iran") return "IRN";
+  if (teamName === "Spain") return "ESP";
+  if (teamName === "Japan") return "JPN";
+  if (teamName === "Morocco") return "MAR";
+  if (teamName === "Switzerland") return "SUI";
   return teamName.substring(0, 3).toUpperCase();
 }
 function parseMatchDate(dateStr) {
