@@ -47,8 +47,9 @@ async function syncFixtures() {
     const detailsChanged = m.group_name !== f.group_name || m.status !== status ||
       m.home_score !== homeScore || m.away_score !== awayScore;
 
-    if (teamsChanged || dateChanged) {
-      // Partido mal capturado o reprogramado: fuera las predicciones, sin puntos.
+    if (teamsChanged) {
+      // Partido mal capturado (equipos distintos): fuera las predicciones, sin puntos.
+      // Un cambio solo de fecha/hora NO borra pronósticos.
       const r = await run('DELETE FROM predictions WHERE match_id = ?', [m.id]);
       predsDeleted += r.changes || 0;
       console.log(`[sync] Partido #${f.match_num}: (${m.home_team} vs ${m.away_team}, ${m.match_date}) -> (${f.home_team} vs ${f.away_team}, ${f.match_date})`);
