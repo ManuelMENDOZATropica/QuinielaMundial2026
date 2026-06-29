@@ -36,6 +36,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'tropica-mundial-2026-secret-key-12
 
 // Connect to Database (Supports both SQLite and PostgreSQL dynamically)
 const db = require('./db/db');
+const { computePoints } = require('./db/scoring');
 
 // Initialize database tables and seed data automatically on startup
 require('./db/init_db');
@@ -388,9 +389,11 @@ app.get('/api/matches', authenticateToken, (req, res) => {
   const userId = req.user.id;
 
   db.all(`
-    SELECT m.id, m.match_num, m.group_name, m.home_team, m.away_team, m.match_date, m.status, 
-           m.home_score, m.away_score, m.is_knockout, m.stage,
-           p.predicted_home_score, p.predicted_away_score, p.points_earned
+    SELECT m.id, m.match_num, m.group_name, m.home_team, m.away_team, m.match_date, m.status,
+           m.home_score, m.away_score, m.et_home_score, m.et_away_score, m.pen_winner,
+           m.is_knockout, m.stage,
+           p.predicted_home_score, p.predicted_away_score,
+           p.pred_et_home, p.pred_et_away, p.pred_pen_winner, p.points_earned
     FROM matches m
     LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = ?
     ORDER BY m.match_date ASC, m.match_num ASC
@@ -426,6 +429,23 @@ app.post('/api/matches/:id/predict', authenticateToken, (req, res) => {
       return res.status(400).json({ error: "Las predicciones para este partido están cerradas (el partido ya comenzó)" });
     }
 
+    // Predicción escalonada en eliminatorias: si predice empate en regular debe predecir
+    // tiempo extra; si predice empate en extra debe elegir ganador de penales.
+    let etHome = null, etAway = null, penWinner = null;
+    if (match.is_knockout && home_score === away_score) {
+      const { et_home_score, et_away_score, pen_winner } = req.body;
+      if (et_home_score === undefined || et_away_score === undefined || et_home_score < 0 || et_away_score < 0) {
+        return res.status(400).json({ error: "Predijiste empate: ingresa el marcador de tiempo extra" });
+      }
+      etHome = et_home_score; etAway = et_away_score;
+      if (et_home_score === et_away_score) {
+        if (pen_winner !== 'home' && pen_winner !== 'away') {
+          return res.status(400).json({ error: "Empate en tiempo extra: elige quién gana en penales" });
+        }
+        penWinner = pen_winner;
+      }
+    }
+
     // Safe upsert (Compatible with all SQLite versions via Select then Insert/Update)
     db.get(`SELECT id FROM predictions WHERE user_id = ? AND match_id = ?`, [userId, matchId], (err, prediction) => {
       if (err) {
@@ -435,19 +455,20 @@ app.post('/api/matches/:id/predict', authenticateToken, (req, res) => {
       if (prediction) {
         // Update
         db.run(`
-          UPDATE predictions 
-          SET predicted_home_score = ?, predicted_away_score = ?, updated_at = CURRENT_TIMESTAMP
+          UPDATE predictions
+          SET predicted_home_score = ?, predicted_away_score = ?,
+              pred_et_home = ?, pred_et_away = ?, pred_pen_winner = ?, updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
-        `, [home_score, away_score, prediction.id], (err) => {
+        `, [home_score, away_score, etHome, etAway, penWinner, prediction.id], (err) => {
           if (err) return res.status(500).json({ error: "Error al actualizar predicción" });
           res.json({ success: true, message: "Predicción actualizada" });
         });
       } else {
         // Insert
         db.run(`
-          INSERT INTO predictions (user_id, match_id, predicted_home_score, predicted_away_score)
-          VALUES (?, ?, ?, ?)
-        `, [userId, matchId, home_score, away_score], (err) => {
+          INSERT INTO predictions (user_id, match_id, predicted_home_score, predicted_away_score, pred_et_home, pred_et_away, pred_pen_winner)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [userId, matchId, home_score, away_score, etHome, etAway, penWinner], (err) => {
           if (err) return res.status(500).json({ error: "Error al guardar predicción" });
           res.json({ success: true, message: "Predicción guardada" });
         });
@@ -493,58 +514,62 @@ app.post('/api/admin/matches/:id/score', requireAdmin, (req, res) => {
     return res.status(400).json({ error: "Marcadores inválidos o estado inválido (debe ser 'finished')" });
   }
 
-  db.serialize(() => {
-    // 1. Update Match
-    db.run(`
-      UPDATE matches 
-      SET home_score = ?, away_score = ?, status = ?
-      WHERE id = ?
-    `, [home_score, away_score, status, matchId], function(err) {
-      if (err) {
-        return res.status(500).json({ error: "Error al actualizar marcador oficial" });
+  db.get(`SELECT * FROM matches WHERE id = ?`, [matchId], (err, match) => {
+    if (err || !match) return res.status(404).json({ error: "Partido no encontrado" });
+
+    // Resultado escalonado en eliminatorias: empate en regular -> tiempo extra;
+    // empate en extra -> ganador de penales.
+    let etHome = null, etAway = null, penWinner = null;
+    if (match.is_knockout && home_score === away_score) {
+      const { et_home_score, et_away_score, pen_winner } = req.body;
+      if (et_home_score === undefined || et_away_score === undefined || et_home_score < 0 || et_away_score < 0) {
+        return res.status(400).json({ error: "Empate en tiempo regular: ingresa el marcador de tiempo extra" });
       }
+      etHome = et_home_score; etAway = et_away_score;
+      if (et_home_score === et_away_score) {
+        if (pen_winner !== 'home' && pen_winner !== 'away') {
+          return res.status(400).json({ error: "Empate en tiempo extra: indica quién ganó en penales" });
+        }
+        penWinner = pen_winner;
+      }
+    }
 
-      // Calculate actual winner sign: 1 (home win), -1 (away win), 0 (draw)
-      const actualDiff = home_score - away_score;
-      const actualWinner = actualDiff > 0 ? 1 : (actualDiff < 0 ? -1 : 0);
+    db.serialize(() => {
+      // 1. Update Match (incluye tiempo extra y penales)
+      db.run(`
+        UPDATE matches
+        SET home_score = ?, away_score = ?, et_home_score = ?, et_away_score = ?, pen_winner = ?, status = ?
+        WHERE id = ?
+      `, [home_score, away_score, etHome, etAway, penWinner, status, matchId], function (err) {
+        if (err) return res.status(500).json({ error: "Error al actualizar marcador oficial" });
 
-      // 2. Retrieve and Update all Predictions for this match.
-      //    Las eliminatorias (is_knockout = 1) valen el doble: 6 exacto / 2 resultado.
-      db.all(`SELECT p.*, m.is_knockout FROM predictions p JOIN matches m ON m.id = p.match_id WHERE p.match_id = ?`, [matchId], (err, predictions) => {
-        if (err) return res.status(500).json({ error: "Error al procesar predicciones" });
+        const finishedMatch = {
+          status, is_knockout: match.is_knockout,
+          home_score, away_score, et_home_score: etHome, et_away_score: etAway, pen_winner: penWinner
+        };
 
-        const stmt = db.prepare(`UPDATE predictions SET points_earned = ? WHERE id = ?`);
+        // 2. Recalcular puntos de las predicciones de este partido (lógica compartida).
+        db.all(`SELECT * FROM predictions WHERE match_id = ?`, [matchId], (err, predictions) => {
+          if (err) return res.status(500).json({ error: "Error al procesar predicciones" });
 
-        predictions.forEach(p => {
-          const predDiff = p.predicted_home_score - p.predicted_away_score;
-          const predWinner = predDiff > 0 ? 1 : (predDiff < 0 ? -1 : 0);
-          const multiplier = p.is_knockout ? 2 : 1;
+          const stmt = db.prepare(`UPDATE predictions SET points_earned = ? WHERE id = ?`);
+          predictions.forEach(p => stmt.run([computePoints(finishedMatch, p), p.id]));
 
-          let points = 0;
-          if (p.predicted_home_score === home_score && p.predicted_away_score === away_score) {
-            points = 3 * multiplier; // Exact score
-          } else if (predWinner === actualWinner) {
-            points = 1 * multiplier; // Correct outcome (win/draw/loss) but incorrect score
-          }
+          stmt.finalize((err) => {
+            if (err) return res.status(500).json({ error: "Error al actualizar puntajes de predicción" });
 
-          stmt.run([points, p.id]);
-        });
-
-        stmt.finalize((err) => {
-          if (err) return res.status(500).json({ error: "Error al actualizar puntajes de predicción" });
-
-          // 3. Update User points sums cached in users table
-          db.run(`
-            UPDATE users
-            SET points = (
-              SELECT COALESCE(SUM(points_earned), 0)
-              FROM predictions
-              WHERE predictions.user_id = users.id
-            )
-          `, (err) => {
-            if (err) return res.status(500).json({ error: "Error al recalcular puntos de los usuarios" });
-
-            res.json({ success: true, message: "Marcador guardado y clasificaciones actualizadas" });
+            // 3. Update User points sums cached in users table
+            db.run(`
+              UPDATE users
+              SET points = (
+                SELECT COALESCE(SUM(points_earned), 0)
+                FROM predictions
+                WHERE predictions.user_id = users.id
+              )
+            `, (err) => {
+              if (err) return res.status(500).json({ error: "Error al recalcular puntos de los usuarios" });
+              res.json({ success: true, message: "Marcador guardado y clasificaciones actualizadas" });
+            });
           });
         });
       });

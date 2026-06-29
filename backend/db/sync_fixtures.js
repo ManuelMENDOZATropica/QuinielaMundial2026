@@ -7,6 +7,7 @@
 
 const db = require('./db');
 const fixtures = require('./fixtures.json');
+const { computePoints } = require('./scoring');
 
 function get(sql, params = []) {
   return new Promise((resolve, reject) => db.get(sql, params, (err, row) => err ? reject(err) : resolve(row)));
@@ -18,7 +19,24 @@ function run(sql, params = []) {
   return new Promise((resolve, reject) => db.run(sql, params, function (err) { err ? reject(err) : resolve(this); }));
 }
 
+// Migración idempotente: agrega columnas de tiempo extra / penales si faltan.
+// SQLite y Postgres tiran error si la columna ya existe -> lo ignoramos.
+async function addColumnIfMissing(table, column, type) {
+  try { await run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`); }
+  catch (e) { /* columna ya existe */ }
+}
+async function migrate() {
+  await addColumnIfMissing('matches', 'et_home_score', 'INTEGER');
+  await addColumnIfMissing('matches', 'et_away_score', 'INTEGER');
+  await addColumnIfMissing('matches', 'pen_winner', 'TEXT');
+  await addColumnIfMissing('predictions', 'pred_et_home', 'INTEGER');
+  await addColumnIfMissing('predictions', 'pred_et_away', 'INTEGER');
+  await addColumnIfMissing('predictions', 'pred_pen_winner', 'TEXT');
+}
+
 async function syncFixtures() {
+  await migrate();
+
   const dbMatches = await all('SELECT * FROM matches');
   const dbByNum = {};
   dbMatches.forEach(m => { dbByNum[m.match_num] = m; });
@@ -87,22 +105,21 @@ async function syncFixtures() {
     }
   }
 
-  // Recalcular puntos de partidos finalizados (3 exacto, 1 resultado, 0 fallo)
-  const finished = await all(`SELECT * FROM matches WHERE status = 'finished'`);
-  for (const fm of finished) {
-    const actualDiff = fm.home_score - fm.away_score;
-    const actualWinner = actualDiff > 0 ? 1 : (actualDiff < 0 ? -1 : 0);
-    const multiplier = fm.is_knockout ? 2 : 1; // eliminatorias valen el doble (6/2)
-    const preds = await all('SELECT * FROM predictions WHERE match_id = ?', [fm.id]);
-    for (const p of preds) {
-      const predDiff = p.predicted_home_score - p.predicted_away_score;
-      const predWinner = predDiff > 0 ? 1 : (predDiff < 0 ? -1 : 0);
-      let points = 0;
-      if (p.predicted_home_score === fm.home_score && p.predicted_away_score === fm.away_score) points = 3 * multiplier;
-      else if (predWinner === actualWinner) points = 1 * multiplier;
-      if (points !== p.points_earned) {
-        await run('UPDATE predictions SET points_earned = ? WHERE id = ?', [points, p.id]);
-      }
+  // Recalcular puntos de TODAS las predicciones (0 si su partido no está finalizado).
+  // Usa la lógica compartida en scoring.js (grupos 3/1, eliminatorias 6/2 + extra 12/4 + penales 8).
+  const preds = await all(`
+    SELECT p.*, m.status, m.is_knockout, m.home_score, m.away_score,
+           m.et_home_score, m.et_away_score, m.pen_winner
+    FROM predictions p JOIN matches m ON m.id = p.match_id`);
+  for (const p of preds) {
+    const match = {
+      status: p.status, is_knockout: p.is_knockout,
+      home_score: p.home_score, away_score: p.away_score,
+      et_home_score: p.et_home_score, et_away_score: p.et_away_score, pen_winner: p.pen_winner
+    };
+    const points = computePoints(match, p);
+    if (points !== p.points_earned) {
+      await run('UPDATE predictions SET points_earned = ? WHERE id = ?', [points, p.id]);
     }
   }
 

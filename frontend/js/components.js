@@ -336,6 +336,69 @@ function LoginRegisterComponent() {
 }
 
 // 2. Dashboard Component
+// Bloque escalonado de eliminatoria para la tarjeta de predicción:
+// tiempo extra (si el jugador puso empate en regular) y penales (si puso empate en extra).
+function renderKnockoutExtras(m, inputClass, isLocked) {
+  if (m.is_knockout !== 1) return '';
+  const hasPrediction = m.predicted_home_score !== null && m.predicted_home_score !== undefined;
+  const regIsDraw = hasPrediction && m.predicted_home_score === m.predicted_away_score;
+  const etHomeVal = (m.pred_et_home !== null && m.pred_et_home !== undefined) ? m.pred_et_home : '';
+  const etAwayVal = (m.pred_et_away !== null && m.pred_et_away !== undefined) ? m.pred_et_away : '';
+  const etIsDraw = etHomeVal !== '' && etAwayVal !== '' && m.pred_et_home === m.pred_et_away;
+  const penVal = m.pred_pen_winner || '';
+  const dis = isLocked ? 'disabled' : '';
+  return `
+    <div class="ko-extra ${regIsDraw ? '' : 'hidden'}" id="ko-et-${m.id}">
+      <div class="mt-xs pt-xs border-t border-dashed border-border-light">
+        <p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold text-center mb-xs">Tiempo extra (120')</p>
+        <div class="flex items-center justify-center gap-sm">
+          <input class="${inputClass} !mt-0" type="number" min="0" max="99" placeholder="-"
+                 data-match-id="${m.id}" data-team="et-home" value="${etHomeVal}" ${dis}/>
+          <span class="text-xs font-bold text-on-surface-variant">-</span>
+          <input class="${inputClass} !mt-0" type="number" min="0" max="99" placeholder="-"
+                 data-match-id="${m.id}" data-team="et-away" value="${etAwayVal}" ${dis}/>
+        </div>
+      </div>
+      <input type="hidden" class="pen-value" data-match-id="${m.id}" value="${penVal}"/>
+      <div class="ko-pen ${etIsDraw ? '' : 'hidden'}" id="ko-pen-${m.id}">
+        <p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold text-center mt-xs mb-xs">Penales · ¿quién gana?</p>
+        <div class="flex items-center justify-center gap-xs">
+          <button type="button" class="pen-btn px-sm py-0.5 rounded text-xs font-bold border transition-colors ${penVal === 'home' ? 'bg-primary text-on-primary border-primary' : 'border-border-light text-on-surface-variant'}"
+                  data-match-id="${m.id}" data-pen="home" ${dis}>${getTeamCode(m.home_team)}</button>
+          <button type="button" class="pen-btn px-sm py-0.5 rounded text-xs font-bold border transition-colors ${penVal === 'away' ? 'bg-primary text-on-primary border-primary' : 'border-border-light text-on-surface-variant'}"
+                  data-match-id="${m.id}" data-pen="away" ${dis}>${getTeamCode(m.away_team)}</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Sub-fila de eliminatoria para el panel de admin: tiempo extra (si el marcador
+// regular fue empate) y ganador de penales (si el tiempo extra también fue empate).
+function adminKnockoutExtras(m) {
+  if (m.is_knockout !== 1) return '';
+  const hasScore = m.home_score !== null && m.home_score !== undefined;
+  const regDraw = hasScore && m.home_score === m.away_score;
+  const etHomeVal = (m.et_home_score !== null && m.et_home_score !== undefined) ? m.et_home_score : '';
+  const etAwayVal = (m.et_away_score !== null && m.et_away_score !== undefined) ? m.et_away_score : '';
+  const etDraw = etHomeVal !== '' && etAwayVal !== '' && m.et_home_score === m.et_away_score;
+  const penVal = m.pen_winner || '';
+  return `
+    <div class="admin-ko-extra ${regDraw ? '' : 'hidden'} flex flex-wrap items-center gap-sm pt-sm border-t border-dashed border-border-light" id="admin-ko-${m.id}">
+      <span class="text-xs uppercase font-bold text-on-surface-variant">Tiempo extra</span>
+      <input type="number" min="0" class="w-12 text-center border border-border-light rounded p-1 admin-et-home-score" data-match-id="${m.id}" value="${etHomeVal}">
+      <span class="font-bold text-on-surface-variant">-</span>
+      <input type="number" min="0" class="w-12 text-center border border-border-light rounded p-1 admin-et-away-score" data-match-id="${m.id}" value="${etAwayVal}">
+      <input type="hidden" class="admin-pen-value" data-match-id="${m.id}" value="${penVal}">
+      <span class="admin-ko-pen ${etDraw ? '' : 'hidden'} flex items-center gap-xs">
+        <span class="text-xs uppercase font-bold text-on-surface-variant ml-sm">Penales gana</span>
+        <button type="button" class="admin-pen-btn px-sm py-0.5 rounded text-xs font-bold border transition-colors ${penVal === 'home' ? 'bg-primary text-on-primary border-primary' : 'border-border-light text-on-surface-variant'}" data-match-id="${m.id}" data-pen="home">${getTeamCode(m.home_team)}</button>
+        <button type="button" class="admin-pen-btn px-sm py-0.5 rounded text-xs font-bold border transition-colors ${penVal === 'away' ? 'bg-primary text-on-primary border-primary' : 'border-border-light text-on-surface-variant'}" data-match-id="${m.id}" data-pen="away">${getTeamCode(m.away_team)}</button>
+      </span>
+    </div>
+  `;
+}
+
 function DashboardComponent(state) {
   const user = state.user;
   const matches = resolveMatchesTeams(state.matches || []);
@@ -488,6 +551,8 @@ function DashboardComponent(state) {
                             <span class="text-[10px] text-on-surface-variant opacity-80 truncate max-w-[90px] text-center font-medium" title="${m.away_team}">${m.away_team}</span>
                           </div>
                         </div>
+
+                        ${renderKnockoutExtras(m, "w-12 text-center border border-border-light rounded-lg focus:ring-1 focus:ring-primary focus:border-primary p-0.5 font-headline-sm text-headline-sm text-primary mt-sm prediction-input", false)}
 
                         <!-- Bottom Action -->
                         <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
@@ -719,12 +784,14 @@ function MatchesComponent(state, filterType = 'pending') {
                           </div>
                         </div>
 
+                        ${renderKnockoutExtras(m, inputClass, isLocked)}
+
                         <!-- Bottom Action -->
                         <div class="flex justify-between items-center mt-sm pt-xs border-t border-border-light">
                           <div class="flex flex-col">
                             ${isFinished ? `
                               <span class="font-label-md text-xs text-success-green font-bold">
-                                Oficial: ${m.home_score}-${m.away_score}
+                                Oficial: ${m.home_score}-${m.away_score}${(m.et_home_score !== null && m.et_home_score !== undefined) ? ` · TE ${m.et_home_score}-${m.et_away_score}` : ''}${m.pen_winner ? ` · Pen: ${getTeamCode(m.pen_winner === 'home' ? m.home_team : m.away_team)}` : ''}
                               </span>
                               <span class="text-[11px] font-bold text-primary">
                                 ${hasPrediction 
@@ -845,7 +912,8 @@ function AdminComponent(state) {
             const isFinished = m.status === 'finished';
 
             return `
-              <div class="p-md bg-surface-gray border rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-md" id="admin-match-card-${m.id}">
+              <div class="p-md bg-surface-gray border rounded-lg flex flex-col gap-sm" id="admin-match-card-${m.id}">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-md">
                 <div>
                   <span class="text-xs bg-surface-container text-on-surface-variant px-sm py-xs rounded uppercase font-bold">Partido #${m.match_num}</span>
                   <span class="text-xs ${isFinished ? 'text-success-green font-bold' : 'text-coral font-bold'} ml-sm uppercase">
@@ -869,11 +937,13 @@ function AdminComponent(state) {
                 </div>
 
                 <div>
-                  <button class="bg-primary hover:bg-primary-container text-on-primary px-lg py-sm rounded-lg font-label-lg text-label-lg transition-colors btn-admin-save-score" 
+                  <button class="bg-primary hover:bg-primary-container text-on-primary px-lg py-sm rounded-lg font-label-lg text-label-lg transition-colors btn-admin-save-score"
                           data-match-id="${m.id}">
                     ${isFinished ? 'Modificar' : 'Finalizar'}
                   </button>
                 </div>
+                </div>
+                ${adminKnockoutExtras(m)}
               </div>
             `;
           }).join('')}

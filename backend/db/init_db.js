@@ -82,8 +82,11 @@ db.serialize(async () => {
       away_team TEXT NOT NULL,
       match_date TEXT NOT NULL,
       status TEXT DEFAULT 'scheduled', -- 'scheduled', 'live', 'finished'
-      home_score INTEGER DEFAULT NULL,
+      home_score INTEGER DEFAULT NULL, -- marcador tiempo regular (90')
       away_score INTEGER DEFAULT NULL,
+      et_home_score INTEGER DEFAULT NULL, -- marcador final tiempo extra (120'), solo eliminatorias
+      et_away_score INTEGER DEFAULT NULL,
+      pen_winner TEXT DEFAULT NULL, -- 'home' | 'away', ganador en penales
       is_knockout INTEGER DEFAULT 0,
       stage TEXT DEFAULT 'group' -- 'group', 'r32', 'r16', 'qf', 'sf', '3rd', 'final'
     )
@@ -99,6 +102,9 @@ db.serialize(async () => {
       match_id INTEGER NOT NULL,
       predicted_home_score INTEGER NOT NULL,
       predicted_away_score INTEGER NOT NULL,
+      pred_et_home INTEGER DEFAULT NULL, -- predicción tiempo extra (solo si predijo empate en regular)
+      pred_et_away INTEGER DEFAULT NULL,
+      pred_pen_winner TEXT DEFAULT NULL, -- 'home' | 'away' (solo si predijo empate en tiempo extra)
       points_earned INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

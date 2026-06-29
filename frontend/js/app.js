@@ -301,15 +301,36 @@ function bindMatchesPageEvents() {
       setTimeout(() => this.classList.remove('scale-110'), 150);
     });
 
-    // Make the save button active on input
+    // Make the save button active on input + revelar tiempo extra / penales en eliminatorias
     input.addEventListener('input', () => {
       const matchId = input.getAttribute('data-match-id');
+      koVisibilityUpdate(matchId);
       const saveBtn = document.getElementById(`save-btn-${matchId}`);
       if (saveBtn) {
         saveBtn.style.backgroundColor = 'var(--primary)';
         saveBtn.style.color = 'var(--on-primary)';
         saveBtn.textContent = 'Guardar';
       }
+    });
+  });
+
+  // Penales: selección de ganador en la tarjeta de predicción
+  appContainer.querySelectorAll('.pen-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      const matchId = btn.getAttribute('data-match-id');
+      const pen = btn.getAttribute('data-pen');
+      const hidden = document.querySelector(`.pen-value[data-match-id="${matchId}"]`);
+      if (hidden) hidden.value = pen;
+      document.querySelectorAll(`.pen-btn[data-match-id="${matchId}"]`).forEach(b => {
+        const on = b.getAttribute('data-pen') === pen;
+        b.classList.toggle('bg-primary', on);
+        b.classList.toggle('text-on-primary', on);
+        b.classList.toggle('border-primary', on);
+        b.classList.toggle('text-on-surface-variant', !on);
+        b.classList.toggle('border-border-light', !on);
+      });
+      triggerAutoSave(matchId);
     });
   });
 
@@ -745,25 +766,74 @@ function startTutorialTour(isManual = false) {
   runStep(1);
 }
 
+// Lee todos los campos de una predicción (regular + eliminatoria) desde el DOM.
+function collectPrediction(matchId) {
+  const q = team => document.querySelector(`.prediction-input[data-match-id="${matchId}"][data-team="${team}"]`);
+  const penEl = document.querySelector(`.pen-value[data-match-id="${matchId}"]`);
+  const match = state.matches.find(m => m.id == matchId);
+  return {
+    home: q('home') ? q('home').value : '',
+    away: q('away') ? q('away').value : '',
+    etHome: q('et-home') ? q('et-home').value : '',
+    etAway: q('et-away') ? q('et-away').value : '',
+    pen: penEl ? penEl.value : '',
+    isKO: !!(match && match.is_knockout === 1)
+  };
+}
+
+// En eliminatorias la predicción solo está completa si, al empatar, también se
+// llenó el tiempo extra y (si vuelve a empatar) se eligió ganador de penales.
+function predictionComplete(p) {
+  if (p.home === '' || p.away === '') return false;
+  if (p.isKO && parseInt(p.home) === parseInt(p.away)) {
+    if (p.etHome === '' || p.etAway === '') return false;
+    if (parseInt(p.etHome) === parseInt(p.etAway) && p.pen === '') return false;
+  }
+  return true;
+}
+
+function buildPredictionPayload(p) {
+  const payload = { home_score: parseInt(p.home), away_score: parseInt(p.away) };
+  if (p.isKO && parseInt(p.home) === parseInt(p.away)) {
+    payload.et_home_score = parseInt(p.etHome);
+    payload.et_away_score = parseInt(p.etAway);
+    if (parseInt(p.etHome) === parseInt(p.etAway)) payload.pen_winner = p.pen;
+  }
+  return payload;
+}
+
+// Muestra/oculta tiempo extra y penales según lo que el jugador haya tecleado.
+function koVisibilityUpdate(matchId) {
+  const match = state.matches.find(m => m.id == matchId);
+  if (!match || match.is_knockout !== 1) return;
+  const q = team => document.querySelector(`.prediction-input[data-match-id="${matchId}"][data-team="${team}"]`);
+  const etBlock = document.getElementById(`ko-et-${matchId}`);
+  const penBlock = document.getElementById(`ko-pen-${matchId}`);
+  const home = q('home') ? q('home').value : '';
+  const away = q('away') ? q('away').value : '';
+  const regDraw = home !== '' && away !== '' && parseInt(home) === parseInt(away);
+  if (etBlock) etBlock.classList.toggle('hidden', !regDraw);
+  const etHome = q('et-home') ? q('et-home').value : '';
+  const etAway = q('et-away') ? q('et-away').value : '';
+  const etDraw = regDraw && etHome !== '' && etAway !== '' && parseInt(etHome) === parseInt(etAway);
+  if (penBlock) penBlock.classList.toggle('hidden', !etDraw);
+}
+
 // Save Prediction logic
 async function triggerSave(matchId) {
   if (state.tutorialActive) return; // Ignore during tutorial
-  const inputs = document.querySelectorAll(`.prediction-input[data-match-id="${matchId}"]`);
-  let homeVal, awayVal;
+  const p = collectPrediction(matchId);
 
-  inputs.forEach(input => {
-    if (input.getAttribute('data-team') === 'home') homeVal = input.value;
-    if (input.getAttribute('data-team') === 'away') awayVal = input.value;
-  });
-
-  if (homeVal === '' || awayVal === '') {
+  if (p.home === '' || p.away === '') {
     showToast("Completa los marcadores", "error");
     return;
   }
+  if (!predictionComplete(p)) {
+    showToast("Completa el tiempo extra / penales", "error");
+    return;
+  }
 
-  const homeScore = parseInt(homeVal);
-  const awayScore = parseInt(awayVal);
-
+  const payload = buildPredictionPayload(p);
   const saveBtn = document.getElementById(`save-btn-${matchId}`);
 
   if (saveBtn) {
@@ -772,18 +842,17 @@ async function triggerSave(matchId) {
   }
 
   try {
-    // Save prediction
-    await API.post(`/api/matches/${matchId}/predict`, {
-      home_score: homeScore,
-      away_score: awayScore
-    });
+    await API.post(`/api/matches/${matchId}/predict`, payload);
     showToast("Predicción guardada");
-    
+
     // Update local state
     const localMatch = state.matches.find(m => m.id == matchId);
     if (localMatch) {
-      localMatch.predicted_home_score = homeScore;
-      localMatch.predicted_away_score = awayScore;
+      localMatch.predicted_home_score = payload.home_score;
+      localMatch.predicted_away_score = payload.away_score;
+      localMatch.pred_et_home = (payload.et_home_score !== undefined) ? payload.et_home_score : null;
+      localMatch.pred_et_away = (payload.et_away_score !== undefined) ? payload.et_away_score : null;
+      localMatch.pred_pen_winner = (payload.pen_winner !== undefined) ? payload.pen_winner : null;
     }
 
     // Re-render current page to update bracket propagation safely preserving focus/value
@@ -797,61 +866,110 @@ async function triggerSave(matchId) {
   }
 }
 
-// Auto-Save prediction checks
+// Auto-Save prediction checks: solo guarda cuando la predicción está completa y cambió.
 function triggerAutoSave(matchId) {
   if (state.tutorialActive) return; // Ignore during tutorial
-  const inputs = document.querySelectorAll(`.prediction-input[data-match-id="${matchId}"]`);
-  let homeVal = '', awayVal = '';
+  const p = collectPrediction(matchId);
+  if (!predictionComplete(p)) return;
 
-  inputs.forEach(input => {
-    if (input.getAttribute('data-team') === 'home') homeVal = input.value;
-    if (input.getAttribute('data-team') === 'away') awayVal = input.value;
-  });
+  const payload = buildPredictionPayload(p);
+  const lm = state.matches.find(m => m.id == matchId);
+  if (!lm) return;
 
-  if (homeVal !== '' && awayVal !== '') {
-    const localMatch = state.matches.find(m => m.id == matchId);
-    if (localMatch && 
-        (localMatch.predicted_home_score !== parseInt(homeVal) || 
-         localMatch.predicted_away_score !== parseInt(awayVal))) {
-      triggerSave(matchId);
-    }
-  }
+  const changed =
+    lm.predicted_home_score !== payload.home_score ||
+    lm.predicted_away_score !== payload.away_score ||
+    (lm.pred_et_home ?? null) !== (payload.et_home_score ?? null) ||
+    (lm.pred_et_away ?? null) !== (payload.et_away_score ?? null) ||
+    (lm.pred_pen_winner ?? null) !== (payload.pen_winner ?? null);
+
+  if (changed) triggerSave(matchId);
 }
 
 // BIND EVENTS FOR ADMIN PANEL
 function bindAdminPageEvents() {
   const appContainer = document.getElementById('app');
 
+  // Eliminatorias: mostrar/ocultar tiempo extra y penales según el marcador cargado.
+  function adminKoVisibility(matchId) {
+    const block = document.getElementById(`admin-ko-${matchId}`);
+    const card = document.getElementById(`admin-match-card-${matchId}`);
+    if (!block || !card) return;
+    const hv = card.querySelector('.admin-home-score').value;
+    const av = card.querySelector('.admin-away-score').value;
+    const regDraw = hv !== '' && av !== '' && parseInt(hv) === parseInt(av);
+    block.classList.toggle('hidden', !regDraw);
+    const penSpan = block.querySelector('.admin-ko-pen');
+    const eh = block.querySelector('.admin-et-home-score').value;
+    const ea = block.querySelector('.admin-et-away-score').value;
+    const etDraw = regDraw && eh !== '' && ea !== '' && parseInt(eh) === parseInt(ea);
+    if (penSpan) penSpan.classList.toggle('hidden', !etDraw);
+  }
+  appContainer.querySelectorAll('.admin-home-score, .admin-away-score, .admin-et-home-score, .admin-et-away-score').forEach(inp => {
+    inp.addEventListener('input', () => adminKoVisibility(inp.getAttribute('data-match-id')));
+  });
+  appContainer.querySelectorAll('.admin-pen-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const matchId = btn.getAttribute('data-match-id');
+      const pen = btn.getAttribute('data-pen');
+      const hidden = appContainer.querySelector(`.admin-pen-value[data-match-id="${matchId}"]`);
+      if (hidden) hidden.value = pen;
+      appContainer.querySelectorAll(`.admin-pen-btn[data-match-id="${matchId}"]`).forEach(b => {
+        const on = b.getAttribute('data-pen') === pen;
+        b.classList.toggle('bg-primary', on);
+        b.classList.toggle('text-on-primary', on);
+        b.classList.toggle('border-primary', on);
+        b.classList.toggle('text-on-surface-variant', !on);
+        b.classList.toggle('border-border-light', !on);
+      });
+    });
+  });
+
   // Admin save official scores
   const saveScoreBtns = appContainer.querySelectorAll('.btn-admin-save-score');
   saveScoreBtns.forEach(btn => {
     btn.addEventListener('click', async () => {
       const matchId = btn.getAttribute('data-match-id');
-      const inputs = appContainer.querySelectorAll(`.score-input[data-match-id="${matchId}"]`);
-      let homeVal = '', awayVal = '';
-
-      inputs.forEach(input => {
-        if (input.classList.contains('admin-home-score')) homeVal = input.value;
-        if (input.classList.contains('admin-away-score')) awayVal = input.value;
-      });
+      const card = document.getElementById(`admin-match-card-${matchId}`);
+      const homeVal = card.querySelector('.admin-home-score').value;
+      const awayVal = card.querySelector('.admin-away-score').value;
 
       if (homeVal === '' || awayVal === '') {
         showToast("Ingresa marcadores oficiales", "error");
         return;
       }
 
+      const match = state.matches.find(m => m.id == matchId);
+      const isKO = match && match.is_knockout === 1;
+      const payload = { home_score: parseInt(homeVal), away_score: parseInt(awayVal), status: 'finished' };
+
+      if (isKO && parseInt(homeVal) === parseInt(awayVal)) {
+        const eh = card.querySelector('.admin-et-home-score').value;
+        const ea = card.querySelector('.admin-et-away-score').value;
+        if (eh === '' || ea === '') {
+          showToast("Empate en tiempo regular: ingresa el marcador de tiempo extra", "error");
+          return;
+        }
+        payload.et_home_score = parseInt(eh);
+        payload.et_away_score = parseInt(ea);
+        if (parseInt(eh) === parseInt(ea)) {
+          const pen = card.querySelector('.admin-pen-value').value;
+          if (pen !== 'home' && pen !== 'away') {
+            showToast("Empate en tiempo extra: elige quién gana en penales", "error");
+            return;
+          }
+          payload.pen_winner = pen;
+        }
+      }
+
       btn.disabled = true;
       btn.textContent = 'Calculando...';
 
       try {
-        await API.post(`/api/admin/matches/${matchId}/score`, {
-          home_score: parseInt(homeVal),
-          away_score: parseInt(awayVal),
-          status: 'finished'
-        });
+        await API.post(`/api/admin/matches/${matchId}/score`, payload);
 
         showToast("Marcador oficial finalizado. Puntos actualizados.");
-        
+
         // Refetch matches
         const data = await API.get('/api/matches');
         state.matches = data.matches;
