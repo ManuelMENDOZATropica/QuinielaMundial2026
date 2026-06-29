@@ -464,8 +464,8 @@ app.post('/api/matches/:id/predict', authenticateToken, (req, res) => {
 app.get('/api/leaderboard', authenticateToken, (req, res) => {
   db.all(`
     SELECT u.id, u.name, u.points,
-           SUM(CASE WHEN p.points_earned = 3 THEN 1 ELSE 0 END) as exact_count,
-           SUM(CASE WHEN p.points_earned = 1 THEN 1 ELSE 0 END) as outcome_count,
+           SUM(CASE WHEN p.points_earned IN (3, 6) THEN 1 ELSE 0 END) as exact_count,
+           SUM(CASE WHEN p.points_earned IN (1, 2) THEN 1 ELSE 0 END) as outcome_count,
            SUM(CASE WHEN p.points_earned = 0 AND p.points_earned IS NOT NULL AND m.status = 'finished' THEN 1 ELSE 0 END) as wrong_count
     FROM users u
     LEFT JOIN predictions p ON u.id = p.user_id
@@ -508,8 +508,9 @@ app.post('/api/admin/matches/:id/score', requireAdmin, (req, res) => {
       const actualDiff = home_score - away_score;
       const actualWinner = actualDiff > 0 ? 1 : (actualDiff < 0 ? -1 : 0);
 
-      // 2. Retrieve and Update all Predictions for this match
-      db.all(`SELECT * FROM predictions WHERE match_id = ?`, [matchId], (err, predictions) => {
+      // 2. Retrieve and Update all Predictions for this match.
+      //    Las eliminatorias (is_knockout = 1) valen el doble: 6 exacto / 2 resultado.
+      db.all(`SELECT p.*, m.is_knockout FROM predictions p JOIN matches m ON m.id = p.match_id WHERE p.match_id = ?`, [matchId], (err, predictions) => {
         if (err) return res.status(500).json({ error: "Error al procesar predicciones" });
 
         const stmt = db.prepare(`UPDATE predictions SET points_earned = ? WHERE id = ?`);
@@ -517,12 +518,13 @@ app.post('/api/admin/matches/:id/score', requireAdmin, (req, res) => {
         predictions.forEach(p => {
           const predDiff = p.predicted_home_score - p.predicted_away_score;
           const predWinner = predDiff > 0 ? 1 : (predDiff < 0 ? -1 : 0);
-          
+          const multiplier = p.is_knockout ? 2 : 1;
+
           let points = 0;
           if (p.predicted_home_score === home_score && p.predicted_away_score === away_score) {
-            points = 3; // Exact score
+            points = 3 * multiplier; // Exact score
           } else if (predWinner === actualWinner) {
-            points = 1; // Correct outcome (win/draw/loss) but incorrect score
+            points = 1 * multiplier; // Correct outcome (win/draw/loss) but incorrect score
           }
 
           stmt.run([points, p.id]);

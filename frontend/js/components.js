@@ -775,6 +775,7 @@ function LeaderboardComponent(state) {
       <div>
         <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Tabla de Clasificación</h2>
         <p class="font-body-sm text-body-sm text-on-surface-variant">Competencia oficial interna del equipo de TRÓPICA. Los empates se resuelven por aciertos exactos.</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Grupos: <strong>3 pts</strong> exacto · <strong>1 pt</strong> resultado. Eliminatorias (16vos en adelante): <strong>doble</strong> (6 / 2).</p>
       </div>
 
       <div class="overflow-x-auto mt-xl">
@@ -783,8 +784,8 @@ function LeaderboardComponent(state) {
             <tr class="border-b border-border-light">
               <th class="py-md px-lg font-label-lg text-label-lg text-on-surface-variant uppercase w-16">Pos</th>
               <th class="py-md px-lg font-label-lg text-label-lg text-on-surface-variant uppercase">Usuario</th>
-              <th class="py-md px-lg font-label-lg text-label-lg text-on-surface-variant uppercase text-center">Exacto (3pts)</th>
-              <th class="py-md px-lg font-label-lg text-label-lg text-on-surface-variant uppercase text-center">Resultado (1pt)</th>
+              <th class="py-md px-lg font-label-lg text-label-lg text-on-surface-variant uppercase text-center">Exacto</th>
+              <th class="py-md px-lg font-label-lg text-label-lg text-on-surface-variant uppercase text-center">Resultado</th>
               <th class="py-md px-lg font-label-lg text-label-lg text-on-surface-variant uppercase text-center">Errado (0pts)</th>
               <th class="py-md px-lg font-label-lg text-label-lg text-on-surface-variant uppercase text-right">Puntos</th>
             </tr>

@@ -92,13 +92,14 @@ async function syncFixtures() {
   for (const fm of finished) {
     const actualDiff = fm.home_score - fm.away_score;
     const actualWinner = actualDiff > 0 ? 1 : (actualDiff < 0 ? -1 : 0);
+    const multiplier = fm.is_knockout ? 2 : 1; // eliminatorias valen el doble (6/2)
     const preds = await all('SELECT * FROM predictions WHERE match_id = ?', [fm.id]);
     for (const p of preds) {
       const predDiff = p.predicted_home_score - p.predicted_away_score;
       const predWinner = predDiff > 0 ? 1 : (predDiff < 0 ? -1 : 0);
       let points = 0;
-      if (p.predicted_home_score === fm.home_score && p.predicted_away_score === fm.away_score) points = 3;
-      else if (predWinner === actualWinner) points = 1;
+      if (p.predicted_home_score === fm.home_score && p.predicted_away_score === fm.away_score) points = 3 * multiplier;
+      else if (predWinner === actualWinner) points = 1 * multiplier;
       if (points !== p.points_earned) {
         await run('UPDATE predictions SET points_earned = ? WHERE id = ?', [points, p.id]);
       }
