@@ -44,8 +44,18 @@ async function syncFixtures() {
 
     const teamsChanged = m.home_team !== f.home_team || m.away_team !== f.away_team;
     const dateChanged = m.match_date !== f.match_date;
-    const detailsChanged = m.group_name !== f.group_name || m.status !== status ||
-      m.home_score !== homeScore || m.away_score !== awayScore;
+
+    // No pisar marcadores cargados desde el admin: si el fixture no trae resultado
+    // (score null / no 'finished') pero la BD ya tiene un partido finalizado, se conserva
+    // lo de la BD. fixtures.json manda en calendario (equipos/fechas), el admin manda en marcadores.
+    // Si los equipos cambian, el resultado viejo deja de tener sentido y sí se descarta.
+    const fixtureHasResult = homeScore !== null && awayScore !== null;
+    const effStatus = (fixtureHasResult || teamsChanged) ? status : (m.status === 'finished' ? 'finished' : status);
+    const effHome = (fixtureHasResult || teamsChanged) ? homeScore : m.home_score;
+    const effAway = (fixtureHasResult || teamsChanged) ? awayScore : m.away_score;
+
+    const detailsChanged = m.group_name !== f.group_name || m.status !== effStatus ||
+      m.home_score !== effHome || m.away_score !== effAway;
 
     if (teamsChanged) {
       // Partido mal capturado (equipos distintos): fuera las predicciones, sin puntos.
@@ -59,7 +69,7 @@ async function syncFixtures() {
       await run(
         `UPDATE matches SET home_team = ?, away_team = ?, match_date = ?, group_name = ?, is_knockout = ?, stage = ?, status = ?, home_score = ?, away_score = ?
          WHERE match_num = ?`,
-        [f.home_team, f.away_team, f.match_date, f.group_name, f.is_knockout, f.stage, status, homeScore, awayScore, f.match_num]
+        [f.home_team, f.away_team, f.match_date, f.group_name, f.is_knockout, f.stage, effStatus, effHome, effAway, f.match_num]
       );
       updated++;
     }
