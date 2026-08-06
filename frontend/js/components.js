@@ -990,3 +990,421 @@ function AdminComponent(state) {
     </div>
   `;
 }
+
+// ==========================================
+// 6. BRACKET / ÁRBOL DE JUEGOS
+// Muestra el cuadro de eliminatorias y la fase de grupos marcando
+// quién le atinó a cada resultado.
+// ==========================================
+
+const STAGE_LABELS = {
+  group: 'Fase de grupos',
+  r32: 'Dieciseisavos',
+  r16: 'Octavos',
+  qf: 'Cuartos de final',
+  sf: 'Semifinales',
+  '3rd': 'Tercer lugar',
+  final: 'Final'
+};
+
+const BRACKET_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'final'];
+
+// Estilos por tipo de acierto. Verde = marcador exacto, dorado = acertó
+// ganador/empate, gris = falló, punteado = no pronosticó.
+const HIT_STYLES = {
+  exact:   { chip: 'bg-primary text-white border-primary',                    dot: 'bg-primary',        label: 'Exacto',          icon: 'check_circle' },
+  outcome: { chip: 'bg-accent-gold text-on-secondary-container border-accent-gold', dot: 'bg-accent-gold', label: 'Resultado',       icon: 'adjust' },
+  miss:    { chip: 'bg-surface-container text-on-surface-variant/60 border-border-light', dot: 'bg-border-light', label: 'Falló',    icon: 'cancel' },
+  none:    { chip: 'bg-white text-on-surface-variant/50 border-dashed border-border-light', dot: 'bg-white border border-dashed border-border-light', label: 'Sin pronóstico', icon: 'remove' },
+  pending: { chip: 'bg-white text-on-surface-variant border-border-light',     dot: 'bg-white',          label: 'Por jugarse',     icon: 'schedule' }
+};
+
+function getInitials(name) {
+  const parts = String(name || '').trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function bracketWinner(m) {
+  // Devuelve 'home' | 'away' | null según el resultado oficial ya cargado.
+  if (m.status !== 'finished' || m.home_score === null || m.away_score === null) return null;
+  if (m.home_score !== m.away_score) return m.home_score > m.away_score ? 'home' : 'away';
+  if (m.et_home_score !== null && m.et_away_score !== null && m.et_home_score !== m.et_away_score) {
+    return m.et_home_score > m.et_away_score ? 'home' : 'away';
+  }
+  if (m.pen_winner) return m.pen_winner;
+  return null;
+}
+
+function bracketWinnerTeam(m) {
+  const w = bracketWinner(m);
+  return w === 'home' ? m.home_team : (w === 'away' ? m.away_team : null);
+}
+
+// Texto corto que resume cómo se definió el partido (90', 120' o penales).
+function bracketDecisionNote(m) {
+  if (m.status !== 'finished') return '';
+  if (m.et_home_score === null || m.et_away_score === null) return '';
+  if (m.pen_winner) {
+    const who = m.pen_winner === 'home' ? m.home_team : m.away_team;
+    return `120': ${m.et_home_score}-${m.et_away_score} · Penales: ${getTeamCode(who)}`;
+  }
+  return `Tiempo extra: ${m.et_home_score}-${m.et_away_score}`;
+}
+
+// Encadena cada partido con los dos partidos previos que lo alimentan.
+// Se resuelve por el equipo ganador; para partidos aún no definidos
+// (Final / 3er lugar con placeholders) se usa el orden de las semifinales.
+function buildBracketLinks(matches) {
+  const byStage = {};
+  BRACKET_ROUNDS.concat(['3rd']).forEach(s => {
+    byStage[s] = matches.filter(m => m.stage === s).sort((a, b) => a.match_num - b.match_num);
+  });
+
+  const links = {}; // match_num -> [match_num previo, ...]
+  for (let i = 1; i < BRACKET_ROUNDS.length; i++) {
+    const round = byStage[BRACKET_ROUNDS[i]] || [];
+    const prev = byStage[BRACKET_ROUNDS[i - 1]] || [];
+    round.forEach((m, idx) => {
+      const found = [];
+      [m.home_team, m.away_team].forEach(team => {
+        const src = prev.find(p => bracketWinnerTeam(p) === team);
+        if (src && !found.includes(src.match_num)) found.push(src.match_num);
+      });
+      if (found.length < 2) {
+        // Fallback: emparejado secuencial (útil cuando aún no hay resultados).
+        const a = prev[idx * 2], b = prev[idx * 2 + 1];
+        if (a && !found.includes(a.match_num)) found.push(a.match_num);
+        if (b && !found.includes(b.match_num)) found.push(b.match_num);
+      }
+      links[m.match_num] = found;
+    });
+  }
+  const third = (byStage['3rd'] || [])[0];
+  if (third) links[third.match_num] = (byStage.sf || []).map(m => m.match_num);
+  return links;
+}
+
+// Fila compacta de un equipo dentro de la tarjeta del árbol.
+function bracketTeamRow(team, score, isWinner, isDecided) {
+  const known = team && !/^(Ganador|Perdedor)/i.test(team);
+  return `
+    <div class="flex items-center gap-sm px-sm py-xs rounded ${isWinner ? 'bg-primary/5' : ''}">
+      ${known ? `
+        <img alt="${team}" class="w-6 h-4 object-cover rounded-sm shrink-0 border border-border-light" src="${getFlagUrl(team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+      ` : `<span class="w-6 h-4 rounded-sm shrink-0 bg-surface-container"></span>`}
+      <span class="flex-1 truncate font-body-sm text-body-sm ${isWinner ? 'font-bold text-on-surface' : (isDecided ? 'text-on-surface-variant' : 'text-on-surface')}">${team}</span>
+      <span class="font-headline-sm text-base font-bold tabular-nums ${isWinner ? 'text-primary' : 'text-on-surface-variant'}">${score === null || score === undefined ? '–' : score}</span>
+    </div>
+  `;
+}
+
+// Fila de fichas con las iniciales de cada participante y su acierto.
+function bracketChips(m, filterUserId) {
+  const preds = m.predictions || [];
+  if (m.status !== 'finished') {
+    return `<p class="font-label-md text-label-md text-on-surface-variant/70 px-sm">${preds.length} pronóstico${preds.length === 1 ? '' : 's'} registrado${preds.length === 1 ? '' : 's'}</p>`;
+  }
+  if (preds.length === 0) {
+    return `<p class="font-label-md text-label-md text-on-surface-variant/60 px-sm italic">Nadie pronosticó este partido</p>`;
+  }
+  // Con un participante seleccionado mostramos su pronóstico completo, no solo la ficha.
+  if (filterUserId) {
+    const p = preds.find(x => x.user_id === filterUserId);
+    if (!p) {
+      return `<p class="font-label-md text-label-md text-on-surface-variant/60 px-sm italic">Sin pronóstico</p>`;
+    }
+    const st = HIT_STYLES[p.hit] || HIT_STYLES.miss;
+    return `
+      <div class="flex items-center gap-xs px-sm flex-wrap">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border text-[10px] font-bold ${st.chip}">${getInitials(p.user_name)}</span>
+        <span class="font-body-sm text-body-sm tabular-nums text-on-surface">${p.predicted_home_score}–${p.predicted_away_score}</span>
+        <span class="font-label-md text-[10px] px-sm py-xs rounded-full border ${st.chip}">${st.label}</span>
+        <span class="font-label-md text-[10px] font-bold ${p.points > 0 ? 'text-primary' : 'text-on-surface-variant/50'}">${p.points} pts</span>
+      </div>
+    `;
+  }
+  const visible = preds;
+  return `
+    <div class="flex flex-wrap gap-xs px-sm">
+      ${visible.map(p => {
+        const st = HIT_STYLES[p.hit] || HIT_STYLES.miss;
+        return `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full border text-[10px] font-bold ${st.chip}" title="${p.user_name} · ${p.predicted_home_score}-${p.predicted_away_score} · ${st.label} (${p.points} pts)">${getInitials(p.user_name)}</span>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// Tarjeta de un partido dentro del árbol de eliminatorias.
+function bracketMatchCard(m, filterUserId) {
+  const winner = bracketWinner(m);
+  const decided = winner !== null;
+  const note = bracketDecisionNote(m);
+  const finished = m.status === 'finished';
+  return `
+    <div class="bracket-node" data-match-num="${m.match_num}">
+      <button type="button" class="bracket-card w-full text-left bg-white border border-border-light rounded-lg card-shadow hover:border-primary transition-colors p-sm" data-bracket-match="${m.id}">
+        <div class="flex items-center justify-between px-sm mb-xs">
+          <span class="font-label-md text-[10px] uppercase tracking-wide text-on-surface-variant/70">#${m.match_num} · ${formatDate(m.match_date)}</span>
+          ${!finished
+            ? `<span class="font-label-md text-[10px] text-on-surface-variant/70">Por jugarse</span>`
+            : ((m.predictions || []).length === 0
+              ? ''
+              : `<span class="font-label-md text-[10px] font-bold text-primary">${m.exact_count} <span class="font-normal text-on-surface-variant/70">exacto${m.exact_count === 1 ? '' : 's'}</span></span>`)}
+        </div>
+        ${bracketTeamRow(m.home_team, m.home_score, winner === 'home', decided)}
+        ${bracketTeamRow(m.away_team, m.away_score, winner === 'away', decided)}
+        ${note ? `<p class="font-label-md text-[10px] text-on-surface-variant/70 px-sm mt-xs">${note}</p>` : ''}
+        <div class="mt-sm pt-sm border-t border-border-light">
+          ${bracketChips(m, filterUserId)}
+        </div>
+      </button>
+    </div>
+  `;
+}
+
+// Fila compacta de un partido de la fase de grupos.
+function groupMatchRow(m, filterUserId) {
+  const winner = bracketWinner(m);
+  return `
+    <button type="button" class="w-full text-left px-sm py-sm rounded-lg hover:bg-surface-gray transition-colors border border-transparent hover:border-border-light" data-bracket-match="${m.id}">
+      <div class="flex items-center gap-sm">
+        <div class="flex-1 min-w-0 flex items-center justify-end gap-xs">
+          <span class="truncate font-body-sm text-body-sm ${winner === 'home' ? 'font-bold' : 'text-on-surface-variant'}">${m.home_team}</span>
+          <img alt="${m.home_team}" class="w-5 h-3.5 object-cover rounded-sm shrink-0 border border-border-light" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+        </div>
+        <span class="font-headline-sm text-sm font-bold tabular-nums px-sm shrink-0 ${m.status === 'finished' ? 'text-on-surface' : 'text-on-surface-variant/50'}">
+          ${m.status === 'finished' ? `${m.home_score}-${m.away_score}` : 'vs'}
+        </span>
+        <div class="flex-1 min-w-0 flex items-center gap-xs">
+          <img alt="${m.away_team}" class="w-5 h-3.5 object-cover rounded-sm shrink-0 border border-border-light" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+          <span class="truncate font-body-sm text-body-sm ${winner === 'away' ? 'font-bold' : 'text-on-surface-variant'}">${m.away_team}</span>
+        </div>
+      </div>
+      <div class="mt-xs">${bracketChips(m, filterUserId)}</div>
+    </button>
+  `;
+}
+
+function bracketLegend() {
+  return `
+    <div class="flex flex-wrap items-center gap-md">
+      ${['exact', 'outcome', 'miss', 'none'].map(k => `
+        <span class="inline-flex items-center gap-xs font-label-md text-label-md text-on-surface-variant">
+          <span class="w-4 h-4 rounded-full border ${HIT_STYLES[k].chip}"></span>${HIT_STYLES[k].label}
+        </span>
+      `).join('')}
+    </div>
+  `;
+}
+
+function BracketComponent(state) {
+  const data = state.bracket || { matches: [], participants: [] };
+  const matches = data.matches || [];
+  const participants = data.participants || [];
+  const filterUserId = state.bracketFilter || null;
+
+  const links = buildBracketLinks(matches);
+  const koMatches = matches.filter(m => m.is_knockout);
+  const groupMatches = matches.filter(m => m.stage === 'group');
+
+  // Resumen del participante filtrado (o de toda la quiniela).
+  const scoped = filterUserId
+    ? matches.flatMap(m => (m.predictions || []).filter(p => p.user_id === filterUserId))
+    : matches.flatMap(m => m.predictions || []);
+  const totals = {
+    exact: scoped.filter(p => p.hit === 'exact').length,
+    outcome: scoped.filter(p => p.hit === 'outcome').length,
+    miss: scoped.filter(p => p.hit === 'miss').length,
+    points: scoped.reduce((s, p) => s + (p.points || 0), 0)
+  };
+
+  // Partidos de eliminatorias ya jugados en los que nadie registró pronóstico.
+  const koFinished = koMatches.filter(m => m.status === 'finished');
+  const koSinPronostico = koFinished.filter(m => (m.predictions || []).length === 0).length;
+
+  const roundColumns = BRACKET_ROUNDS.map(stage => {
+    const list = koMatches.filter(m => m.stage === stage).sort((a, b) => a.match_num - b.match_num);
+    if (list.length === 0) return '';
+    return `
+      <div class="bracket-round flex flex-col justify-around gap-md shrink-0" data-stage="${stage}" style="width: 236px;">
+        <h3 class="font-label-lg text-label-lg uppercase text-on-surface-variant text-center sticky top-0">${STAGE_LABELS[stage]}</h3>
+        <div class="flex flex-col justify-around gap-md flex-1">
+          ${list.map(m => bracketMatchCard(m, filterUserId)).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const thirdPlace = koMatches.find(m => m.stage === '3rd');
+
+  const groups = [...new Set(groupMatches.map(m => m.group_name))].filter(Boolean).sort();
+
+  return `
+    <div class="space-y-lg">
+
+      <!-- Encabezado y controles -->
+      <div class="bg-white border border-border-light rounded-xl p-lg card-shadow">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-md">
+          <div>
+            <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Árbol de juegos</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">
+              El cuadro completo del Mundial con el resultado oficial de cada partido y quién le atinó.
+              Haz clic en cualquier partido para ver el detalle de todos los pronósticos.
+            </p>
+          </div>
+          <div class="shrink-0">
+            <label class="block font-label-md text-label-md text-on-surface-variant mb-xs" for="bracket-filter">Ver por participante</label>
+            <select id="bracket-filter" class="border border-border-light rounded-lg px-md py-sm font-body-sm text-body-sm bg-white min-w-[220px]">
+              <option value="">Todos los participantes</option>
+              ${participants.map(p => `<option value="${p.id}" ${filterUserId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-lg pt-lg border-t border-border-light flex flex-col lg:flex-row lg:items-center lg:justify-between gap-md">
+          ${bracketLegend()}
+          <div class="flex items-center gap-lg">
+            <div class="text-center">
+              <p class="font-headline-sm text-headline-sm font-bold text-primary">${totals.exact}</p>
+              <p class="font-label-md text-label-md text-on-surface-variant">Exactos</p>
+            </div>
+            <div class="text-center">
+              <p class="font-headline-sm text-headline-sm font-bold text-on-secondary-container">${totals.outcome}</p>
+              <p class="font-label-md text-label-md text-on-surface-variant">Resultado</p>
+            </div>
+            <div class="text-center">
+              <p class="font-headline-sm text-headline-sm font-bold text-on-surface-variant/60">${totals.miss}</p>
+              <p class="font-label-md text-label-md text-on-surface-variant">Fallos</p>
+            </div>
+            <div class="text-center">
+              <p class="font-headline-sm text-headline-sm font-bold text-on-surface">${totals.points}</p>
+              <p class="font-label-md text-label-md text-on-surface-variant">Puntos</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${koSinPronostico > 0 ? `
+      <div class="bg-accent-gold/15 border border-accent-gold rounded-xl p-md flex items-start gap-sm">
+        <span class="material-symbols-outlined text-on-secondary-container">info</span>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">
+          En <strong>${koSinPronostico}</strong> de los ${koFinished.length} partidos de eliminatorias ya jugados nadie registró pronóstico,
+          así que el cuadro muestra el resultado oficial sin aciertos marcados. Los aciertos aparecerán en cuanto se capturen esos pronósticos.
+        </p>
+      </div>` : ''}
+
+      <!-- Árbol de eliminatorias -->
+      <div class="bg-white border border-border-light rounded-xl p-lg card-shadow">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-md">Eliminatorias</h3>
+        <div class="overflow-x-auto custom-scrollbar pb-md">
+          <div id="bracket-canvas" class="relative flex gap-xl items-stretch min-w-max" style="min-height: 900px;">
+            <svg id="bracket-lines" class="absolute inset-0 pointer-events-none" style="width:100%;height:100%;overflow:visible;" aria-hidden="true"></svg>
+            ${roundColumns}
+          </div>
+        </div>
+        ${thirdPlace ? `
+        <div class="mt-lg pt-lg border-t border-border-light">
+          <h4 class="font-label-lg text-label-lg uppercase text-on-surface-variant mb-sm">${STAGE_LABELS['3rd']}</h4>
+          <div class="max-w-[236px]">${bracketMatchCard(thirdPlace, filterUserId)}</div>
+        </div>` : ''}
+      </div>
+
+      <!-- Fase de grupos -->
+      <div class="bg-white border border-border-light rounded-xl p-lg card-shadow">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Fase de grupos</h3>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs mb-lg">Los 72 partidos de la primera ronda, agrupados. Cada ficha es un participante.</p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-lg">
+          ${groups.map(g => {
+            const list = groupMatches.filter(m => m.group_name === g).sort((a, b) => a.match_num - b.match_num);
+            return `
+              <div class="border border-border-light rounded-lg p-md">
+                <h4 class="font-label-lg text-label-lg uppercase text-primary font-bold mb-sm">Grupo ${g}</h4>
+                <div class="space-y-xs">
+                  ${list.map(m => groupMatchRow(m, filterUserId)).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Modal de detalle -->
+      <div id="bracket-modal" class="hidden fixed inset-0 z-50 items-center justify-center p-md" style="background: rgba(0,0,0,0.45);">
+        <div class="bg-white rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto custom-scrollbar card-shadow" id="bracket-modal-content"></div>
+      </div>
+    </div>
+  `;
+}
+
+// Contenido del modal con el detalle completo de un partido.
+function BracketMatchDetail(m) {
+  const winner = bracketWinner(m);
+  const note = bracketDecisionNote(m);
+  const preds = m.predictions || [];
+  const hasET = m.et_home_score !== null && m.et_away_score !== null;
+
+  return `
+    <div class="sticky top-0 bg-white border-b border-border-light p-lg flex items-start justify-between gap-md">
+      <div class="flex-1">
+        <p class="font-label-md text-label-md uppercase text-on-surface-variant">${STAGE_LABELS[m.stage] || m.stage}${m.group_name ? ` · Grupo ${m.group_name}` : ''} · Partido #${m.match_num}</p>
+        <div class="flex items-center gap-md mt-sm">
+          <div class="flex items-center gap-sm">
+            <img alt="${m.home_team}" class="w-8 h-6 object-cover rounded border border-border-light" src="${getFlagUrl(m.home_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+            <span class="font-headline-sm text-headline-sm font-bold ${winner === 'home' ? 'text-primary' : ''}">${m.home_team}</span>
+          </div>
+          <span class="font-headline-md text-headline-md font-bold tabular-nums">${m.status === 'finished' ? `${m.home_score} – ${m.away_score}` : 'vs'}</span>
+          <div class="flex items-center gap-sm">
+            <span class="font-headline-sm text-headline-sm font-bold ${winner === 'away' ? 'text-primary' : ''}">${m.away_team}</span>
+            <img alt="${m.away_team}" class="w-8 h-6 object-cover rounded border border-border-light" src="${getFlagUrl(m.away_team)}" onerror="this.src='https://flagcdn.com/w80/un.png'"/>
+          </div>
+        </div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">${formatDate(m.match_date)}${note ? ` · ${note}` : ''}</p>
+      </div>
+      <button type="button" id="bracket-modal-close" class="shrink-0 w-9 h-9 rounded-full hover:bg-surface-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-on-surface-variant">close</span>
+      </button>
+    </div>
+
+    <div class="p-lg">
+      ${m.status !== 'finished' ? `
+        <p class="text-center text-on-surface-variant font-body-sm text-body-sm py-lg">Este partido todavía no se juega. Hay ${preds.length} pronóstico${preds.length === 1 ? '' : 's'} registrado${preds.length === 1 ? '' : 's'}, se revelarán al finalizar.</p>
+      ` : (preds.length === 0 ? `
+        <p class="text-center text-on-surface-variant font-body-sm text-body-sm py-lg">Nadie registró un pronóstico para este partido.</p>
+      ` : `
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-border-light">
+              <th class="py-sm font-label-lg text-label-lg text-on-surface-variant uppercase">Participante</th>
+              <th class="py-sm font-label-lg text-label-lg text-on-surface-variant uppercase text-center">Pronóstico</th>
+              ${hasET ? `<th class="py-sm font-label-lg text-label-lg text-on-surface-variant uppercase text-center">120'</th>` : ''}
+              <th class="py-sm font-label-lg text-label-lg text-on-surface-variant uppercase text-center">Acierto</th>
+              <th class="py-sm font-label-lg text-label-lg text-on-surface-variant uppercase text-right">Puntos</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${preds.map(p => {
+              const st = HIT_STYLES[p.hit] || HIT_STYLES.miss;
+              return `
+                <tr class="border-b border-border-light">
+                  <td class="py-sm font-body-sm text-body-sm font-semibold text-on-surface">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border text-[10px] font-bold mr-sm ${st.chip}">${getInitials(p.user_name)}</span>
+                    ${p.user_name}
+                  </td>
+                  <td class="py-sm text-center font-body-md text-body-md tabular-nums">${p.predicted_home_score}–${p.predicted_away_score}</td>
+                  ${hasET ? `<td class="py-sm text-center font-body-sm text-body-sm tabular-nums text-on-surface-variant">${p.pred_et_home !== null && p.pred_et_away !== null ? `${p.pred_et_home}–${p.pred_et_away}` : '—'}${p.pred_pen_winner ? ` (pen: ${getTeamCode(p.pred_pen_winner === 'home' ? m.home_team : m.away_team)})` : ''}</td>` : ''}
+                  <td class="py-sm text-center">
+                    <span class="inline-flex items-center gap-xs font-label-md text-label-md px-sm py-xs rounded-full border ${st.chip}">
+                      <span class="material-symbols-outlined" style="font-size:14px;">${st.icon}</span>${st.label}
+                    </span>
+                  </td>
+                  <td class="py-sm text-right font-bold ${p.points > 0 ? 'text-primary' : 'text-on-surface-variant/50'}">${p.points}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `)}
+    </div>
+  `;
+}

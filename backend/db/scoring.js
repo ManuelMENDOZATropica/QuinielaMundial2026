@@ -51,4 +51,45 @@ function computePoints(match, pred) {
   return pts;
 }
 
-module.exports = { computePoints };
+// Clasifica un pronóstico para la vista de "Árbol de juegos".
+// Devuelve el desglose de qué le atinó cada persona en cada partido:
+//   hit: 'exact'   -> marcador exacto del tiempo regular
+//        'outcome' -> acertó ganador/empate pero no el marcador
+//        'miss'    -> falló
+//        'none'    -> no hay pronóstico registrado
+//   et / pen: mismo criterio para tiempo extra y penales (null si no aplica).
+function classifyPrediction(match, pred) {
+  const empty = { hit: 'none', points: 0, et: null, pen: null };
+  if (!pred || !notNull(pred.predicted_home_score) || !notNull(pred.predicted_away_score)) return empty;
+  if (match.status !== 'finished' || !notNull(match.home_score) || !notNull(match.away_score)) {
+    return { hit: 'pending', points: 0, et: null, pen: null };
+  }
+
+  const exactReg = pred.predicted_home_score === match.home_score && pred.predicted_away_score === match.away_score;
+  const sameReg = sign(pred.predicted_home_score - pred.predicted_away_score) === sign(match.home_score - match.away_score);
+  const hit = exactReg ? 'exact' : (sameReg ? 'outcome' : 'miss');
+
+  let et = null, pen = null;
+  if (match.is_knockout) {
+    const regWasDraw = match.home_score === match.away_score;
+    const hasActualET = notNull(match.et_home_score) && notNull(match.et_away_score);
+    const predHasET = notNull(pred.pred_et_home) && notNull(pred.pred_et_away);
+    if (regWasDraw && hasActualET) {
+      if (!predHasET) {
+        et = 'none';
+      } else {
+        const exactET = pred.pred_et_home === match.et_home_score && pred.pred_et_away === match.et_away_score;
+        const sameET = sign(pred.pred_et_home - pred.pred_et_away) === sign(match.et_home_score - match.et_away_score);
+        et = exactET ? 'exact' : (sameET ? 'outcome' : 'miss');
+      }
+      if (match.et_home_score === match.et_away_score && match.pen_winner) {
+        if (!pred.pred_pen_winner) pen = 'none';
+        else pen = pred.pred_pen_winner === match.pen_winner ? 'exact' : 'miss';
+      }
+    }
+  }
+
+  return { hit, points: computePoints(match, pred), et, pen };
+}
+
+module.exports = { computePoints, classifyPrediction };

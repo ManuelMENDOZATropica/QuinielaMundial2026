@@ -8,7 +8,9 @@ const state = {
   matches: [],
   leaderboard: [],
   currentMatchesFilter: 'pending', // Default filter for predictions page
-  tutorialActive: false
+  tutorialActive: false,
+  bracket: null,        // { matches, participants } del endpoint /api/bracket
+  bracketFilter: null   // user_id para ver el árbol desde la óptica de una persona
 };
 
 // Toast Notifications Helper
@@ -214,12 +216,19 @@ async function router() {
         }, 600);
       }
     } 
+    else if (hash === '#bracket') {
+      const data = await API.get('/api/bracket');
+      state.bracket = data;
+
+      appContainer.innerHTML = BracketComponent(state);
+      bindBracketPageEvents();
+    }
     else if (hash === '#leaderboard') {
       const data = await API.get('/api/leaderboard');
       state.leaderboard = data.leaderboard;
 
       appContainer.innerHTML = LeaderboardComponent(state);
-    } 
+    }
     else if (hash === '#admin') {
       if (!state.user || state.user.is_admin !== 1) {
         window.location.hash = '#matches';
@@ -1022,6 +1031,112 @@ const logoutBtnHeader = document.getElementById('btn-logout-header');
 if (logoutBtnHeader) logoutBtnHeader.addEventListener('click', handleLogout);
 
 // Removed sidebar logout handler
+
+// ==========================================
+// ÁRBOL DE JUEGOS (BRACKET)
+// ==========================================
+
+// Dibuja los conectores del cuadro midiendo la posición real de cada tarjeta.
+// Se recalcula al renderizar y al cambiar el tamaño de la ventana.
+function drawBracketConnectors() {
+  const canvas = document.getElementById('bracket-canvas');
+  const svg = document.getElementById('bracket-lines');
+  if (!canvas || !svg || !state.bracket) return;
+
+  const links = buildBracketLinks(state.bracket.matches || []);
+  const base = canvas.getBoundingClientRect();
+  svg.setAttribute('width', canvas.scrollWidth);
+  svg.setAttribute('height', canvas.scrollHeight);
+  svg.setAttribute('viewBox', `0 0 ${canvas.scrollWidth} ${canvas.scrollHeight}`);
+
+  const box = (num) => {
+    const el = canvas.querySelector(`.bracket-node[data-match-num="${num}"]`);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return {
+      left: r.left - base.left,
+      right: r.right - base.left,
+      mid: r.top - base.top + r.height / 2
+    };
+  };
+
+  const paths = [];
+  Object.keys(links).forEach(target => {
+    const t = box(target);
+    if (!t) return;
+    links[target].forEach(source => {
+      const s = box(source);
+      if (!s) return;
+      const gapMid = (s.right + t.left) / 2;
+      paths.push(
+        `<path d="M ${s.right} ${s.mid} H ${gapMid} V ${t.mid} H ${t.left}" fill="none" stroke="#DBDBDB" stroke-width="2" stroke-linejoin="round"/>`
+      );
+    });
+  });
+  svg.innerHTML = paths.join('');
+}
+
+let bracketResizeTimer = null;
+window.addEventListener('resize', () => {
+  if (window.location.hash !== '#bracket') return;
+  clearTimeout(bracketResizeTimer);
+  bracketResizeTimer = setTimeout(drawBracketConnectors, 150);
+});
+
+function openBracketMatch(matchId) {
+  const match = (state.bracket?.matches || []).find(m => String(m.id) === String(matchId));
+  if (!match) return;
+  const modal = document.getElementById('bracket-modal');
+  const content = document.getElementById('bracket-modal-content');
+  if (!modal || !content) return;
+
+  content.innerHTML = BracketMatchDetail(match);
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  const closeBtn = document.getElementById('bracket-modal-close');
+  if (closeBtn) closeBtn.addEventListener('click', closeBracketMatch);
+}
+
+function closeBracketMatch() {
+  const modal = document.getElementById('bracket-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function bindBracketPageEvents() {
+  const appContainer = document.getElementById('app');
+
+  // Abrir el detalle de cualquier partido (árbol o fase de grupos)
+  appContainer.querySelectorAll('[data-bracket-match]').forEach(btn => {
+    btn.addEventListener('click', () => openBracketMatch(btn.dataset.bracketMatch));
+  });
+
+  // Cerrar el modal al hacer clic fuera o con Escape
+  const modal = document.getElementById('bracket-modal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeBracketMatch();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeBracketMatch();
+  });
+
+  // Filtro por participante
+  const filterSelect = document.getElementById('bracket-filter');
+  if (filterSelect) {
+    filterSelect.addEventListener('change', (e) => {
+      state.bracketFilter = e.target.value ? parseInt(e.target.value, 10) : null;
+      appContainer.innerHTML = BracketComponent(state);
+      bindBracketPageEvents();
+    });
+  }
+
+  // Los conectores necesitan que las tarjetas ya estén posicionadas
+  requestAnimationFrame(() => setTimeout(drawBracketConnectors, 60));
+}
 
 // Page Event Listeners
 window.addEventListener('hashchange', router);

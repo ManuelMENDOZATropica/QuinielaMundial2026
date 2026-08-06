@@ -36,7 +36,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'tropica-mundial-2026-secret-key-12
 
 // Connect to Database (Supports both SQLite and PostgreSQL dynamically)
 const db = require('./db/db');
-const { computePoints } = require('./db/scoring');
+const { computePoints, classifyPrediction } = require('./db/scoring');
 
 // Initialize database tables and seed data automatically on startup
 require('./db/init_db');
@@ -498,6 +498,79 @@ app.get('/api/leaderboard', authenticateToken, (req, res) => {
       return res.status(500).json({ error: "Error al obtener tabla de clasificación" });
     }
     res.json({ leaderboard });
+  });
+});
+
+// ==========================================
+// BRACKET ENDPOINT (árbol de juegos / quién atinó qué)
+// ==========================================
+
+// Devuelve todos los partidos con los pronósticos de TODOS los participantes
+// y la clasificación de acierto de cada uno (exacto / resultado / fallo).
+app.get('/api/bracket', authenticateToken, (req, res) => {
+  db.all(`
+    SELECT id, match_num, group_name, home_team, away_team, match_date, status,
+           home_score, away_score, et_home_score, et_away_score, pen_winner,
+           is_knockout, stage
+    FROM matches
+    ORDER BY match_num ASC
+  `, [], (err, matches) => {
+    if (err) return res.status(500).json({ error: "Error al obtener partidos" });
+
+    db.all(`
+      SELECT p.match_id, p.user_id, u.name AS user_name,
+             p.predicted_home_score, p.predicted_away_score,
+             p.pred_et_home, p.pred_et_away, p.pred_pen_winner
+      FROM predictions p
+      JOIN users u ON u.id = p.user_id
+      ORDER BY u.name ASC
+    `, [], (err2, preds) => {
+      if (err2) return res.status(500).json({ error: "Error al obtener pronósticos" });
+
+      // Participantes = quienes tienen al menos un pronóstico registrado.
+      const participants = [];
+      const seen = new Set();
+      preds.forEach(p => {
+        if (!seen.has(p.user_id)) {
+          seen.add(p.user_id);
+          participants.push({ id: p.user_id, name: p.user_name });
+        }
+      });
+      participants.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+      const byMatch = {};
+      preds.forEach(p => {
+        (byMatch[p.match_id] = byMatch[p.match_id] || []).push(p);
+      });
+
+      const enriched = matches.map(m => {
+        const rows = (byMatch[m.id] || []).map(p => {
+          const c = classifyPrediction(m, p);
+          return {
+            user_id: p.user_id,
+            user_name: p.user_name,
+            predicted_home_score: p.predicted_home_score,
+            predicted_away_score: p.predicted_away_score,
+            pred_et_home: p.pred_et_home,
+            pred_et_away: p.pred_et_away,
+            pred_pen_winner: p.pred_pen_winner,
+            points: c.points,
+            hit: c.hit,
+            et_hit: c.et,
+            pen_hit: c.pen
+          };
+        });
+        rows.sort((a, b) => b.points - a.points || a.user_name.localeCompare(b.user_name, 'es'));
+        return Object.assign({}, m, {
+          predictions: rows,
+          exact_count: rows.filter(r => r.hit === 'exact').length,
+          outcome_count: rows.filter(r => r.hit === 'outcome').length,
+          miss_count: rows.filter(r => r.hit === 'miss').length
+        });
+      });
+
+      res.json({ matches: enriched, participants });
+    });
   });
 });
 
